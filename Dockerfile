@@ -15,4 +15,4 @@ RUN npm install
 # Bundle app source
 COPY . .
 
-CMD [ "node", "app/main.js" ]
+CMD [ "node", "server.js" ]
