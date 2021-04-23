@@ -1,0 +1,54 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on push events but only for the master branch
+  push:
+    branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  deploy:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      -
+        name: Login to DockerHub
+        uses: docker/login-action@v1 
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      -
+        name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/node-technical-indicators-notifier:${{ github.sha }}
+      -
+        name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
+      -
+        name: Deploy Image
+        uses: addnab/docker-run-action@v1
+        with:
+          image: caprover/cli-caprover:v2.1.1
+          run: |
+            echo "Hello World"
+            caprover deploy --caproverUrl ${{ secrets.CAPROVER_URL }} --caproverPassword "${{ secrets.CAPROVER_PASSWORD }}" --caproverApp crypto-technical-indicators-slack-notifier --imageName ${{ secrets.DOCKERHUB_USERNAME }}/node-technical-indicators-notifier:${{ github.sha }}
+
+  
+
+      
