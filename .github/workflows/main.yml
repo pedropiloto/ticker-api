@@ -36,7 +36,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/node-technical-indicators-notifier:${{ github.sha }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/ticker-api:${{ github.sha }}
       -
         name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
@@ -47,7 +47,7 @@ jobs:
           image: caprover/cli-caprover:v2.1.1
           run: |
             echo "Hello World"
-            caprover deploy --caproverUrl ${{ secrets.CAPROVER_URL }} --caproverPassword "${{ secrets.CAPROVER_PASSWORD }}" --caproverApp crypto-technical-indicators-slack-notifier --imageName ${{ secrets.DOCKERHUB_USERNAME }}/node-technical-indicators-notifier:${{ github.sha }}
+            caprover deploy --caproverUrl ${{ secrets.CAPROVER_URL }} --caproverPassword "${{ secrets.CAPROVER_PASSWORD }}" --caproverApp ticker-api --imageName ${{ secrets.DOCKERHUB_USERNAME }}/ticker-api:${{ github.sha }}
 
   
 
