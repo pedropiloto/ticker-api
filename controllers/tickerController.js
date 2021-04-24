@@ -2,9 +2,6 @@
 module.exports = {
 
   get: function(req, res, next) {
-        res.json({
-          ticker: "dummy",
-          quote: 20,
-        });
+    res.send(`${Math.floor(Math.random() * 1000)}`)
   }
 };
