@@ -51,7 +51,7 @@ const get = async (req, res, next) => {
           let change24h = Math.round(Number(object[`${currency_name}_24h_change`]) * 100) / 100
           let result = `${object[currency_name]};${change24h}`
           redisClient.set(ticker_name, result)
-          redisClient.expire(ticker_name, 5)
+          redisClient.expire(ticker_name, process.env.REDIS_TICKER_MARKET_TTL || 600)
           res.send(result)
         }
       } catch (error) {
