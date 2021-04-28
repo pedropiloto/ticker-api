@@ -1,18 +1,23 @@
 const express = require("express");
 const logger = require("morgan");
-const routes = require("./routes");
+const tickerController = require("./controllers/tickerController");
 const app = express();
+const mongoose = require("./config/database"); //database configuration
 
 const start = () => {
 
+  mongoose.connection.on(
+    "error",
+    console.error.bind(console, "MongoDB connection error:")
+  );
+
   app.use(logger("dev"));
 
-  app.get("/", function(req, res) {
-    res.json({ tutorial: "Build REST API with node.js" });
-  });
-
   // private route
-  app.use("/ticker", routes);
+
+  app.get("/ticker", tickerController.get);
+  app.get("/ticker/config", tickerController.getTickers);
+
 
   app.get("/favicon.ico", function(req, res) {
     res.sendStatus(204);
