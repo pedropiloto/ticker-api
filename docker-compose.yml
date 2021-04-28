@@ -19,7 +19,9 @@ services:
       REDIS_PORT: 6379
 
   configs-worker:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile-test
     command: npm run start:configs-worker
     volumes:
       - .:/usr/app/

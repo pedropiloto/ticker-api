@@ -123,4 +123,4 @@ const start = async () => {
 
 setInterval(() => {
   start()
-}, 86400 * 1000);
+}, process.env.CONFIG_INTERVAL || 86400 * 1000);
