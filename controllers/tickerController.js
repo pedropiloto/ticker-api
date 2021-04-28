@@ -67,9 +67,9 @@ const get = async (req, res, next) => {
 }
 
 const getTickers = async (req, res, next) => {
-  let coin = await Coin.find({active: true})
-  let currency = await Currency.find({active: true})
-  res.json({coins: coin.map(x=>x.base), currencies: currency.map(x=>x.name)})
+  let coin = await Coin.find({ active: true })
+  let currency = await Currency.find({ active: true })
+  res.send(JSON.stringify({ coins: coin.map(x => x.base), currencies: currency.map(x => x.name) }))
 }
 
 module.exports = { get, getTickers };
