@@ -1,6 +1,6 @@
 const express = require("express");
 const logger = require("morgan");
-const { getCoinsList, getSupportedCurrencies } = require("./gateways/coingecko-gateway");
+const { getCoinsList, getSupportedCurrencies, getCoinsMarket } = require("./gateways/coingecko-gateway");
 const Coin = require("./models/coin");
 const Currency = require("./models/currency");
 const SUPPORTED_CURRENCIES = require("./supported-currencies");
@@ -12,13 +12,22 @@ const start = async () => {
       "error",
       console.error.bind(console, "MongoDB connection error:")
     );
-    let coins = await getCoinsList()
+
+    let coins = []
+
+    console.log("start fetching coins")
+    for (let i = 0; i < 4; i++) {
+      let coins_response = await getCoinsMarket(i+1)
+      coins = coins.concat(coins_response.data)
+    }
+    console.log("coins fetched:", coins.length)
+
     let supported_vs_currencies = await getSupportedCurrencies()
 
     let filtered_supported_currencies = SUPPORTED_CURRENCIES.filter(
       sc => supported_vs_currencies.data.find(svc => svc === sc)).map(x => x.toUpperCase())
 
-    let tickers = coins.data.filter(x => !x.id.includes(":")).filter(x => !x.id.includes(";")).map(
+    let tickers = coins.filter(x => !x.id.includes(":")).filter(x => !x.id.includes(";")).map(
       x => {
         return {
           base_id: x.id,
@@ -121,6 +130,4 @@ const start = async () => {
   }
 }
 
-setInterval(() => {
   start()
-}, process.env.CONFIG_INTERVAL || 86400 * 1000);

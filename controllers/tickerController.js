@@ -1,6 +1,5 @@
 
 require("dotenv").config();
-const e = require("express");
 const redis = require("redis");
 const Coin = require("../models/coin");
 const Currency = require("../models/currency");
@@ -67,9 +66,16 @@ const get = async (req, res, next) => {
 }
 
 const getTickers = async (req, res, next) => {
-  let coin = await Coin.find({ active: true })
+  let page = !!req.query.page ? req.query.page : 1
+  let limit = 250
+
+  let coins = await Coin.find({ active: true })
   let currency = await Currency.find({ active: true })
-  res.json({ coins: (coin.map(x => x.base).slice(0,250)), currencies: currency.map(x => x.name) })
+
+  const startIndex = (page-1) * limit
+  const endIndex = page * limit
+
+  res.json({ coins: {data: (coins.map(x => x.base).slice(startIndex,endIndex)), total: coins.length} , currencies: currency.map(x => x.name) })
 }
 
 module.exports = { get, getTickers };
