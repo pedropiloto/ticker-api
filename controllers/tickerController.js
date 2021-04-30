@@ -8,6 +8,7 @@ const { getSimplePrice } = require("../gateways/coingecko-gateway");
 redisClient = require("../gateways/redis-gateway")
 
 const get = async (req, res, next) => {
+  console.log("cenaspppp", req.headers)
   newrelic.addCustomAttribute('device_mac_address', req.headers['device_mac_address'])
   let ticker_name = req.query.name
   newrelic.addCustomAttribute('ticker_name', ticker_name)
