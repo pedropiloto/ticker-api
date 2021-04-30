@@ -1,11 +1,14 @@
-FROM node:10.15.0-alpine
+FROM node:14
 
 WORKDIR /usr/app
 
 COPY package.json .
 
+ENV NR_NATIVE_METRICS_NO_DOWNLOAD true
+
+RUN yarn global add node-gyp
+RUN yarn global add nodemon
 RUN yarn install
 
-RUN npm install -g nodemon
 
 COPY . .

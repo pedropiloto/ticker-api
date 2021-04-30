@@ -1,3 +1,4 @@
+require('newrelic');
 const express = require("express");
 const logger = require("morgan");
 const { getCoinsList, getSupportedCurrencies, getCoinsMarket } = require("./gateways/coingecko-gateway");
@@ -64,7 +65,7 @@ const start = async () => {
     }
 
     if (coinsData) {
-      let coinsToDesactivate = coinsData.filter(x => !tickers.find(y => y.base_id === x.base_id))
+      let coinsToDesactivate = coinsData.filter(cd=>cd.added_manually!==true).filter(x => !tickers.find(y => y.base_id === x.base_id))
       coinsToDesactivate.forEach(element => {
         let query = { base_id: element.base_id }
         let update = { active: false }
@@ -130,6 +131,7 @@ const start = async () => {
   }
 }
 
+start()
 setInterval(() => {
   start()
 }, process.env.CONFIG_INTERVAL || 86400 * 1000);

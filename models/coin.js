@@ -21,6 +21,12 @@ const CoinSchema = new Schema({
     required: true,
     default: true
   },
+  added_manually: {
+    type: Boolean,
+    trim: true,
+    required: true,
+    default: false
+  },
 
 },
 {timestamps:true});
