@@ -33,7 +33,7 @@ client.on('error', error => {
     transactional: false,
     severity: ERROR_SEVERITY,
   });
-  Bugsnag.notify(util.inspect(error));
+  Bugsnag.notify(error);
 });
 
 const get = promisify(client.get).bind(client);

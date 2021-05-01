@@ -23,7 +23,7 @@ mongoose.connection.on(
       transactional: false,
       severity: ERROR_SEVERITY,
     });
-    Bugsnag.notify(util.inspect(new Error('MongoDB connection error')));
+    Bugsnag.notify(new Error('MongoDB connection error'));
   }
 );
 

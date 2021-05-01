@@ -31,7 +31,7 @@ const start = async () => {
           transactional: false,
           severity: ERROR_SEVERITY,
         });
-        Bugsnag.notify(util.inspect(new Error('MongoDB connection error')));
+        Bugsnag.notify(new Error('MongoDB connection error'));
       }
     );
 
@@ -74,7 +74,7 @@ const start = async () => {
           log({
             message: `ERROR inserting coin: ${error.stack}, coin: ${element.id}`, type: BUSINESS_LOG_TYPE, transactional: false
           });
-            Bugsnag.notify(util.inspect(error));
+          Bugsnag.notify(error);
         }))
     });
 
@@ -90,7 +90,7 @@ const start = async () => {
       log({
         message: `ERROR fetching coins from db: ${error.stack}`, type: BUSINESS_LOG_TYPE, transactional: false
       });
-        Bugsnag.notify(util.inspect(error));
+      Bugsnag.notify(error);
     }
 
     if (coinsData) {
@@ -103,7 +103,7 @@ const start = async () => {
             log({
               message: `ERROR updating removed coin: ${error.stack}, coin: ${element}`, type: BUSINESS_LOG_TYPE, transactional: false
             });
-              Bugsnag.notify(util.inspect(error));
+            Bugsnag.notify(error);
           })
         )
       })
@@ -127,7 +127,7 @@ const start = async () => {
           log({
             message: `ERROR iinserting currency: ${error.stack}, currency: ${element}`, type: BUSINESS_LOG_TYPE, transactional: false
           });
-            Bugsnag.notify(util.inspect(error));
+          Bugsnag.notify(error);
         })
       )
     });
@@ -149,7 +149,7 @@ const start = async () => {
       log({
         message: `ERROR fetching currencies: ${error.stack}`, type: BUSINESS_LOG_TYPE, transactional: false
       });
-        Bugsnag.notify(util.inspect(error));
+      Bugsnag.notify(error);
     }
 
     if (currenciesData) {
@@ -162,7 +162,7 @@ const start = async () => {
             log({
               message: `ERROR updating removed currency: ${error.stack}, currency: ${element}`, type: BUSINESS_LOG_TYPE, transactional: false
             });
-              Bugsnag.notify(util.inspect(error));
+            Bugsnag.notify(error);
           }))
       })
 
@@ -178,7 +178,7 @@ const start = async () => {
     log({
       message: `UNKNOWN ERROR: ${error.stack}`, type: BUSINESS_LOG_TYPE, transactional: false
     });
-      Bugsnag.notify(util.inspect(error));
+    Bugsnag.notify(error);
     process.exit(1)
   }
 }

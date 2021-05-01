@@ -28,7 +28,7 @@ const get = async (req, res, next) => {
       device_mac_address,
       error
     });
-    Bugsnag.notify(util.inspect(error));
+    Bugsnag.notify(error);
   })
 
   if (cached_result) {
@@ -48,7 +48,7 @@ const get = async (req, res, next) => {
       message: `invalid ticker`, type: BUSINESS_LOG_TYPE, transactional: false, ticker_name, device_mac_address, severity: ERROR_SEVERITY
     });
     let error = new Error(`Invalid ticker: ${ticker_name}, device_mac_address:${device_mac_address}`)
-    Bugsnag.notify(util.inspect(error));
+    Bugsnag.notify(error);
     newrelic.noticeError(error)
     res.send("Invalid Ticker")
     return
@@ -63,7 +63,7 @@ const get = async (req, res, next) => {
       message: `Unsupported Ticker`, type: BUSINESS_LOG_TYPE, transactional: false, ticker_name, device_mac_address, severity: ERROR_SEVERITY
     });
     let error = new Error(`Unsupported Ticker: ${ticker_name}, device_mac_address:${device_mac_address}`)
-    Bugsnag.notify(util.inspect(error));
+    Bugsnag.notify(error);
     newrelic.noticeError(error)
     res.status(200).send("Unsupported")
     return
@@ -78,7 +78,7 @@ const get = async (req, res, next) => {
         message: `Removed ticker`, type: BUSINESS_LOG_TYPE, transactional: false, ticker_name, device_mac_address, severity: ERROR_SEVERITY
       });
       let error = new Error(`Removed Ticker: ${ticker_name}, device_mac_address:${device_mac_address}`)
-      Bugsnag.notify(util.inspect(error));
+      Bugsnag.notify(error);
       newrelic.noticeError(error)
       res.status(200).send("Removed")
       return
@@ -89,7 +89,7 @@ const get = async (req, res, next) => {
         log({
           message: `ERROR saving cache: ${error.stack}, ticker_name: ${ticker_name}, device_mac_address:${device_mac_address}`, type: BUSINESS_LOG_TYPE, transactional: false, ticker_name, device_mac_address, severity: ERROR_SEVERITY
         });
-        Bugsnag.notify(util.inspect(error));
+        Bugsnag.notify(error);
       })
       let expireTTL = process.env.REDIS_TICKER_MARKET_TTL || 5
       log({
@@ -105,7 +105,7 @@ const get = async (req, res, next) => {
     log({
       message: `UNKNOWN ERROR: ${error.stack}, ticker_name: ${ticker_name} device_mac_address: ${device_mac_address}`, type: OPERATIONAL_LOG_TYPE, transactional: false, ticker_name, device_mac_address, severity: ERROR_SEVERITY, error
     });
-    Bugsnag.notify(util.inspect(error));
+    Bugsnag.notify(error);
     newrelic.noticeError(error)
     res.status(500).send("Upstream Error")
     return
@@ -113,23 +113,23 @@ const get = async (req, res, next) => {
 }
 
 const getTickers = async (req, res, next) => {
-  try{
-  newrelic.addCustomAttribute('device_mac_address', req.headers['device-mac-address'])
-  let page = !!req.query.page ? req.query.page : 1
-  let limit = 250
+  try {
+    newrelic.addCustomAttribute('device_mac_address', req.headers['device-mac-address'])
+    let page = !!req.query.page ? req.query.page : 1
+    let limit = 250
 
-  let coins = await Coin.find({ active: true })
-  let currency = await Currency.find({ active: true })
+    let coins = await Coin.find({ active: true })
+    let currency = await Currency.find({ active: true })
 
-  const startIndex = (page - 1) * limit
-  const endIndex = page * limit
+    const startIndex = (page - 1) * limit
+    const endIndex = page * limit
 
-  res.json({ coins: { data: (coins.map(x => x.base).slice(startIndex, endIndex)), total: coins.length }, currencies: currency.map(x => x.name) })
-  }catch(error){
+    res.json({ coins: { data: (coins.map(x => x.base).slice(startIndex, endIndex)), total: coins.length }, currencies: currency.map(x => x.name) })
+  } catch (error) {
     log({
       message: `UNKNOWN ERROR: ${error.stack}, ticker_name: ${ticker_name} device_mac_address: ${device_mac_address}`, type: OPERATIONAL_LOG_TYPE, transactional: false, ticker_name, device_mac_address, severity: ERROR_SEVERITY, error
     });
-    Bugsnag.notify(util.inspect(error));
+    Bugsnag.notify(error);
     newrelic.noticeError(error)
     res.status(500).send("Upstream Error")
   }
