@@ -10,5 +10,4 @@ RUN yarn global add node-gyp
 RUN yarn global add nodemon
 RUN yarn install
 
-
 COPY . .

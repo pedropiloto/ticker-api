@@ -5,7 +5,6 @@ console.log("in db config");
 const mongoose = require("mongoose");
 const nodeEnv = process.env.NODE_ENV;
 const mongoDB = process.env.MONGO_URL;
-console.log("Mongo URL", mongoDB);
 mongoose.set("useFindAndModify", false);
 mongoose.set('useCreateIndex', true);
 mongoose.connect(mongoDB, {useNewUrlParser: true});

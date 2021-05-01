@@ -19,6 +19,7 @@ services:
       REDIS_PORT: 6379
       APP_NAME: crypto-ticker-api
       API_KEY: dummy
+      NODE_ENV: development
 
   configs-worker:
     build: 
@@ -33,6 +34,7 @@ services:
     environment:
       MONGO_URL: mongodb://mongo:27017/crypto-tickers-api
       APP_NAME: crypto-ticker-api
+      NODE_ENV: development
 
   mongo:
     image: mongo

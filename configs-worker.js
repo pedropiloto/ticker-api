@@ -1,27 +1,52 @@
 require('newrelic');
-const express = require("express");
-const logger = require("morgan");
-const { getCoinsList, getSupportedCurrencies, getCoinsMarket } = require("./gateways/coingecko-gateway");
+const getMetricEmitter = require('@newrelic/native-metrics')
+const { getSupportedCurrencies, getCoinsMarket } = require("./gateways/coingecko-gateway");
 const Coin = require("./models/coin");
 const Currency = require("./models/currency");
 const SUPPORTED_CURRENCIES = require("./supported-currencies");
 const mongoose = require("./config/database"); //database configuration
+const Bugsnag = require('@bugsnag/js');
+const { log } = require('./utils/logger');
+const {
+  OPERATIONAL_LOG_TYPE, BUSINESS_LOG_TYPE, ERROR_SEVERITY,
+} = require('./utils/constants');
+
+if (process.env.NODE_ENV === 'production' && process.env.BUSGNAG_API_KEY) {
+  Bugsnag.start({
+    apiKey: `${process.env.BUSGNAG_API_KEY}`
+  });
+}
 
 const start = async () => {
+  log({
+    message: `starting configs-worker`, type: BUSINESS_LOG_TYPE, transactional: false
+  });
   try {
     mongoose.connection.on(
       "error",
-      console.error.bind(console, "MongoDB connection error:")
+      () => {
+        log({
+          message: 'MongoDB connection error',
+          type: OPERATIONAL_LOG_TYPE,
+          transactional: false,
+          severity: ERROR_SEVERITY,
+        });
+        Bugsnag.notify(util.inspect(new Error('MongoDB connection error')));
+      }
     );
 
     let coins = []
 
-    console.log("start fetching coins")
+    log({
+      message: `start fetching coins from api`, type: BUSINESS_LOG_TYPE, transactional: false
+    });
     for (let i = 0; i < 4; i++) {
-      let coins_response = await getCoinsMarket(i+1)
+      let coins_response = await getCoinsMarket(i + 1)
       coins = coins.concat(coins_response.data)
     }
-    console.log("coins fetched:", coins.length)
+    log({
+      message: `coins fetched from api: ${coins.length}`, type: BUSINESS_LOG_TYPE, transactional: false
+    });
 
     let supported_vs_currencies = await getSupportedCurrencies()
 
@@ -46,13 +71,14 @@ const start = async () => {
       let update = { base_id: element.base_id, base: element.base, active: true }
       insertCoinsPromises.push(Coin.findOneAndUpdate(query, update,
         upsertOptions).catch((error) => {
-          console.log("Error inserting coin", element.id, error, error.stack)
+          log({
+            message: `ERROR inserting coin: ${error.stack}, coin: ${element.id}`, type: BUSINESS_LOG_TYPE, transactional: false
+          });
+            Bugsnag.notify(util.inspect(error));
         }))
     });
 
-    console.log("start inserting coins")
     await Promise.all(insertCoinsPromises)
-    console.log("finish inserting coins")
 
     //update coins
     let updateCoinsPromises = []
@@ -61,24 +87,34 @@ const start = async () => {
     try {
       coinsData = await Coin.find({})
     } catch (error) {
-      console.log("Error fetching coins", error, error.stack)
+      log({
+        message: `ERROR fetching coins from db: ${error.stack}`, type: BUSINESS_LOG_TYPE, transactional: false
+      });
+        Bugsnag.notify(util.inspect(error));
     }
 
     if (coinsData) {
-      let coinsToDesactivate = coinsData.filter(cd=>cd.added_manually!==true).filter(x => !tickers.find(y => y.base_id === x.base_id))
+      let coinsToDesactivate = coinsData.filter(cd => cd.added_manually !== true).filter(x => !tickers.find(y => y.base_id === x.base_id))
       coinsToDesactivate.forEach(element => {
         let query = { base_id: element.base_id }
         let update = { active: false }
         updateCoinsPromises.push(Coin.findOneAndUpdate(query, update,
           {}).catch((error) => {
-            console.log("Error updating removed currency", element, error, error.stack)
+            log({
+              message: `ERROR updating removed coin: ${error.stack}, coin: ${element}`, type: BUSINESS_LOG_TYPE, transactional: false
+            });
+              Bugsnag.notify(util.inspect(error));
           })
         )
       })
 
-      console.log("start updating coins")
+      log({
+        message: `sstart updating coins`, type: BUSINESS_LOG_TYPE, transactional: false
+      });
       await Promise.all(updateCoinsPromises)
-      console.log("finish updating coins")
+      log({
+        message: `finish updating coins`, type: BUSINESS_LOG_TYPE, transactional: false
+      });
     }
 
     //insert currencies
@@ -88,14 +124,21 @@ const start = async () => {
       let update = { name: element, active: true }
       insertCurrenciesPromises.push(Currency.findOneAndUpdate(query, update,
         upsertOptions).catch((error) => {
-          console.log("Error inserting currency", element, error, error.stack)
+          log({
+            message: `ERROR iinserting currency: ${error.stack}, currency: ${element}`, type: BUSINESS_LOG_TYPE, transactional: false
+          });
+            Bugsnag.notify(util.inspect(error));
         })
       )
     });
 
-    console.log("start inserting currencies")
+    log({
+      message: `start inserting currencies`, type: BUSINESS_LOG_TYPE, transactional: false
+    });
     await Promise.all(insertCurrenciesPromises)
-    console.log("finish inserting currencies")
+    log({
+      message: `finish inserting currencies`, type: BUSINESS_LOG_TYPE, transactional: false
+    });
 
     //update currencies
     let updateCurrenciesPromises = []
@@ -103,7 +146,10 @@ const start = async () => {
     try {
       currenciesData = await Currency.find({})
     } catch (error) {
-      console.log("Error fetching currencies", error, error.stack)
+      log({
+        message: `ERROR fetching currencies: ${error.stack}`, type: BUSINESS_LOG_TYPE, transactional: false
+      });
+        Bugsnag.notify(util.inspect(error));
     }
 
     if (currenciesData) {
@@ -113,22 +159,41 @@ const start = async () => {
         let update = { active: false }
         updateCurrenciesPromises.push(Currency.findOneAndUpdate(query, update,
           {}).catch((error) => {
-            console.log("Error updating removed currency", element, error, error.stack)
+            log({
+              message: `ERROR updating removed currency: ${error.stack}, currency: ${element}`, type: BUSINESS_LOG_TYPE, transactional: false
+            });
+              Bugsnag.notify(util.inspect(error));
           }))
       })
 
-      console.log("start updating currencies")
+      log({
+        message: `start updating currencies`, type: BUSINESS_LOG_TYPE, transactional: false
+      });
       await Promise.all(updateCurrenciesPromises)
-      console.log("finish updating currencies")
+      log({
+        message: `finish updating currencies`, type: BUSINESS_LOG_TYPE, transactional: false
+      });
     }
-
-
-    console.log("f", filtered_supported_currencies)
-    console.log("c", tickers.length)
-  } catch (e) {
-    console.log("error detected:", e)
+  } catch (error) {
+    log({
+      message: `UNKNOWN ERROR: ${error.stack}`, type: BUSINESS_LOG_TYPE, transactional: false
+    });
+      Bugsnag.notify(util.inspect(error));
     process.exit(1)
   }
+}
+
+var emitter = getMetricEmitter()
+if (emitter.gcEnabled) {
+  setInterval(() => {
+    emitter.getGCMetrics()
+  }, 1000)
+}
+
+if (emitter.loopEnabled) {
+  setInterval(() => {
+    emitter.getLoopMetrics()
+  }, 1000)
 }
 
 start()
