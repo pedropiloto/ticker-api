@@ -142,7 +142,7 @@ const getCoin = async (req, res, next) => {
     newrelic.addCustomAttribute('device_mac_address', req.headers['device-mac-address'])
     newrelic.addCustomAttribute('coin', coin_requested)
 
-    let coin = await Coin.findOne({ base_id: coin_requested, active: true })
+    let coin = await Coin.findOne({ base: coin_requested, active: true })
 
     if (!!coin) {
       res.json(coin)
