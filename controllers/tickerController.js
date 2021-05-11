@@ -137,7 +137,8 @@ const getTickers = async (req, res, next) => {
 
 const getCoin = async (req, res, next) => {
   try {
-    let coin_requested = req.param.name && req.param.name.toLowerCase()
+    let coin_requested = req.params.name && req.params.name.toLowerCase()
+    console.log("Cenas", coin_requested)
     newrelic.addCustomAttribute('device_mac_address', req.headers['device-mac-address'])
     newrelic.addCustomAttribute('coin', coin_requested)
 
@@ -177,4 +178,4 @@ const getCurrencies = async (req, res, next) => {
   }
 }
 
-module.exports = { get, getTickers, getCoin };
+module.exports = { get, getTickers, getCoin, getCurrencies };

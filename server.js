@@ -44,6 +44,7 @@ app.use(logger("dev"));
 app.get("/ticker", authMiddleware, tickerController.get);
 app.get("/ticker/config", authMiddleware, tickerController.getTickers);
 app.get("/coin/:name", authMiddleware, tickerController.getCoin);
+app.get("/currencies", authMiddleware, tickerController.getCurrencies);
 
 const port = process.env.PORT || 3000;
 
