@@ -40,7 +40,7 @@ const start = async () => {
     log({
       message: `start fetching coins from api`, type: BUSINESS_LOG_TYPE, transactional: false
     });
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 30; i++) {
       let coins_response = await getCoinsMarket(i + 1)
       coins = coins.concat(coins_response.data)
     }

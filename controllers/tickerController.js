@@ -135,4 +135,29 @@ const getTickers = async (req, res, next) => {
   }
 }
 
-module.exports = { get, getTickers };
+const getCoin = async (req, res, next) => {
+  console.log("here")
+  try {
+    let coin_requested = req.param.coin && req.param.coin.toLowerCase()
+    newrelic.addCustomAttribute('device_mac_address', req.headers['device-mac-address'])
+    newrelic.addCustomAttribute('coin', coin_requested)
+
+    let coin = await Coin.findOne({ base_id: coin_requested, active: true })
+
+    if (!!coin) {
+      res.json(coin)
+    } else {
+      res.status(404).send("Coin does not exist")
+    }
+
+  } catch (error) {
+    log({
+      message: `UNKNOWN ERROR: ${error.stack}, ticker_name: ${ticker_name} device_mac_address: ${device_mac_address}`, type: OPERATIONAL_LOG_TYPE, transactional: false, ticker_name, device_mac_address, severity: ERROR_SEVERITY, error
+    });
+    Bugsnag.notify(error);
+    newrelic.noticeError(error)
+    res.status(500).send("Upstream Error")
+  }
+}
+
+module.exports = { get, getTickers, getCoin };
