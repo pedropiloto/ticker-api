@@ -137,7 +137,7 @@ const getTickers = async (req, res, next) => {
 
 const getCoin = async (req, res, next) => {
   try {
-    let coin_requested = req.params.name && req.params.name.toLowerCase()
+    let coin_requested = req.params.name && req.params.name.toUpperCase()
     console.log("Cenas", coin_requested)
     newrelic.addCustomAttribute('device_mac_address', req.headers['device-mac-address'])
     newrelic.addCustomAttribute('coin', coin_requested)
