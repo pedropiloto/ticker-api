@@ -117,8 +117,8 @@ const get = async (req, res, next) => {
 const getTickers = async (req, res, next) => {
   try {
     newrelic.addCustomAttribute('device_mac_address', req.headers['device-mac-address'])
-    newrelic.addCustomAttribute('device_model', req.headers['device-model'])
-    newrelic.addCustomAttribute('device_version', req.headers['device-version'])
+    newrelic.addCustomAttribute('device_model', req.headers['device-model'] || "MULTI_COIN")
+    newrelic.addCustomAttribute('device_version', req.headers['device-version'] || "1.0.0")
     let page = !!req.query.page ? req.query.page : 1
     let limit = 250
 
@@ -144,8 +144,8 @@ const getCoin = async (req, res, next) => {
     let coin_requested = req.params.name && req.params.name.toUpperCase()
     console.log("Cenas", coin_requested)
     newrelic.addCustomAttribute('device_mac_address', req.headers['device-mac-address'])
-    newrelic.addCustomAttribute('device_model', req.headers['device-model'])
-    newrelic.addCustomAttribute('device_version', req.headers['device-version'])
+    newrelic.addCustomAttribute('device_model', req.headers['device-model'] || "MULTI_COIN")
+    newrelic.addCustomAttribute('device_version', req.headers['device-version'] || "1.0.0")
     newrelic.addCustomAttribute('coin', coin_requested)
 
     let coin = await Coin.findOne({ base: coin_requested, active: true })
@@ -169,8 +169,8 @@ const getCoin = async (req, res, next) => {
 const getCurrencies = async (req, res, next) => {
   try {
     newrelic.addCustomAttribute('device_mac_address', req.headers['device-mac-address'])
-    newrelic.addCustomAttribute('device_model', req.headers['device-model'])
-    newrelic.addCustomAttribute('device_version', req.headers['device-version'])
+    newrelic.addCustomAttribute('device_model', req.headers['device-model'] || "MULTI_COIN")
+    newrelic.addCustomAttribute('device_version', req.headers['device-version'] || "1.0.0")
 
     let currencies = await Currency.find({ active: true })
 
