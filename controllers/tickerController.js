@@ -15,8 +15,8 @@ const {
 const get = async (req, res, next) => {
   let device_mac_address = req.headers['device-mac-address']
   newrelic.addCustomAttribute('device_mac_address', req.headers['device-mac-address'])
-  newrelic.addCustomAttribute('device_model', req.headers['device-model'])
-  newrelic.addCustomAttribute('device_version', req.headers['device-version'])
+  newrelic.addCustomAttribute('device_model', req.headers['device-model'] || "MULTI_COIN")
+  newrelic.addCustomAttribute('device_version', req.headers['device-version'] || "1.0.0")
   let ticker_name = req.query.name
   newrelic.addCustomAttribute('ticker_name', ticker_name)
 
