@@ -1,6 +1,7 @@
 module.exports = [
     "btc",
-    "eth",,
+    "eth",
+    "bnb",
     "usd",
     "jpy",
     "cad",
