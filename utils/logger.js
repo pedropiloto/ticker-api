@@ -1,5 +1,6 @@
 const pino = require('pino');
 const newrelic = require('newrelic');
+const logzio_defined = !!process.env.LOGZIO_TOKEN
 const logzio = `${process.env.LOGZIO_TOKEN}` ? require('logzio-nodejs').createLogger({
   token: `${process.env.LOGZIO_TOKEN}`,
   protocol: 'https',
@@ -30,13 +31,13 @@ const log = (params) => {
   } else {
     logger.info(params);
   }
-  if (logzio) {
+  if (logzio_defined) {
     logzio.log(params);
   }
 };
 
 const sendAndCloseLogzio = () => {
-  if (logzio) {
+  if (logzio_defined) {
     logzio.sendAndClose();
   }
 };

@@ -1,6 +1,6 @@
 require('newrelic');
 const getMetricEmitter = require('@newrelic/native-metrics')
-const { getSupportedCurrencies, getCoinsMarket } = require("./gateways/coingecko-gateway");
+const { getSupportedCurrencies, getCoinsList } = require("./gateways/coingecko-gateway");
 const Coin = require("./models/coin");
 const Currency = require("./models/currency");
 const SUPPORTED_CURRENCIES = require("./supported-currencies");
@@ -35,15 +35,14 @@ const start = async () => {
       }
     );
 
-    let coins = []
+    let coins_response = await getCoinsList()
+
+    let coins = coins_response.data
 
     log({
       message: `start fetching coins from api`, type: BUSINESS_LOG_TYPE, transactional: false
     });
-    for (let i = 0; i < 35; i++) {
-      let coins_response = await getCoinsMarket(i + 1)
-      coins = coins.concat(coins_response.data)
-    }
+
     log({
       message: `coins fetched from api: ${coins.length}`, type: BUSINESS_LOG_TYPE, transactional: false
     });
@@ -51,7 +50,8 @@ const start = async () => {
     let supported_vs_currencies = await getSupportedCurrencies()
 
     let filtered_supported_currencies = SUPPORTED_CURRENCIES.filter(
-      sc => supported_vs_currencies.data.find(svc => svc === sc)).map(x => x.toUpperCase())
+      sc => supported_vs_currencies.data.find(svc => svc === sc)).map(x => x.toUpperCase()
+    )
 
     let tickers = coins.filter(x => !x.id.includes(":")).filter(x => !x.id.includes(";")).map(
       x => {
@@ -77,8 +77,10 @@ const start = async () => {
           Bugsnag.notify(error);
         }))
     });
-
-    await Promise.all(insertCoinsPromises)
+    
+    for(let i = 0; i < insertCoinsPromises.length; i++){
+      await insertCoinsPromises[i]
+    }
 
     //update coins
     let updateCoinsPromises = []
@@ -95,6 +97,9 @@ const start = async () => {
 
     if (coinsData) {
       let coinsToDesactivate = coinsData.filter(cd => cd.added_manually !== true).filter(x => !tickers.find(y => y.base_id === x.base_id))
+      log({
+        message: `Desactivating coins: ${coinsToDesactivate}`, type: BUSINESS_LOG_TYPE, transactional: false
+      });
       coinsToDesactivate.forEach(element => {
         let query = { base_id: element.base_id }
         let update = { active: false }
@@ -125,7 +130,7 @@ const start = async () => {
       insertCurrenciesPromises.push(Currency.findOneAndUpdate(query, update,
         upsertOptions).catch((error) => {
           log({
-            message: `ERROR iinserting currency: ${error.stack}, currency: ${element}`, type: BUSINESS_LOG_TYPE, transactional: false
+            message: `ERROR inserting currency: ${error.stack}, currency: ${element}`, type: BUSINESS_LOG_TYPE, transactional: false
           });
           Bugsnag.notify(error);
         })
