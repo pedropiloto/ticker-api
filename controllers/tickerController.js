@@ -99,7 +99,7 @@ const get = async (req, res, next) => {
       });
       redisClient.expire(ticker_name, expireTTL)
       log({
-        message: `sent result: ${cached_result} from api`, type: BUSINESS_LOG_TYPE, transactional: false, ticker_name, device_mac_address
+        message: `sent result: ${result} from api`, type: BUSINESS_LOG_TYPE, transactional: false, ticker_name, device_mac_address
       });
       res.send(result)
     }
