@@ -1,7 +1,8 @@
 require('newrelic');
 const express = require("express");
 const logger = require("morgan");
-const tickerController = require("./controllers/tickerController");
+const TickerController = require("./controllers/ticker-controller");
+const CnftFloorController = require("./controllers/cnft-floor-controller");
 const authMiddleware = require("./auth-middleware")
 const app = express();
 const mongoose = require("./config/database"); //database configuration
@@ -41,10 +42,12 @@ app.use(logger("dev"));
 
 // private route
 
-app.get("/ticker", authMiddleware, tickerController.get);
-app.get("/ticker/config", authMiddleware, tickerController.getTickers);
-app.get("/coin/:name", authMiddleware, tickerController.getCoin);
-app.get("/currencies", authMiddleware, tickerController.getCurrencies);
+app.get("/ticker", authMiddleware, TickerController.get);
+app.get("/ticker/config", authMiddleware, TickerController.getTickers);
+app.get("/coin/:name", authMiddleware, TickerController.getCoin);
+app.get("/currencies", authMiddleware, TickerController.getCurrencies);
+app.get("/cnft/:policy/floor", authMiddleware, CnftFloorController.getFloorPriceByPolicy);
+app.get("/cnft/projects", authMiddleware, CnftFloorController.getTopProjects);
 
 const port = process.env.PORT || 3000;
 
