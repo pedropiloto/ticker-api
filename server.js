@@ -3,6 +3,7 @@ const express = require("express");
 const logger = require("morgan");
 const TickerController = require("./controllers/ticker-controller");
 const CnftFloorController = require("./controllers/cnft-floor-controller");
+const EthNftFloorController = require("./controllers/eth-nft-floor-controller");
 const authMiddleware = require("./auth-middleware")
 const app = express();
 const mongoose = require("./config/database"); //database configuration
@@ -48,6 +49,9 @@ app.get("/coin/:name", authMiddleware, TickerController.getCoin);
 app.get("/currencies", authMiddleware, TickerController.getCurrencies);
 app.get("/cnft/:policy/floor", authMiddleware, CnftFloorController.getFloorPriceByPolicy);
 app.get("/cnft/projects", authMiddleware, CnftFloorController.getTopProjects);
+app.get("/eth_nft/projects", authMiddleware, EthNftFloorController.getTopProjects);
+app.post("/eth_nft/projects", authMiddleware, EthNftFloorController.updateTopProjects);
+app.get("/eth_nft/:slug/floor", authMiddleware, EthNftFloorController.getFloorPriceBySlug);
 
 const port = process.env.PORT || 3000;
 
