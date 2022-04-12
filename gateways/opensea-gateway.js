@@ -2,8 +2,33 @@ require('dotenv').config();
 const axios = require('axios');
 const OpenseaScraper = require("opensea-scraper");
 
-// eslint-disable-next-line import/prefer-default-export
-const getTopProjects = async () => OpenseaScraper.rankings("7d", {}, "ethereum");
+const puppeteer = require('puppeteer-extra');
+// add stealth plugin and use defaults (all evasion techniques)
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+puppeteer.use(StealthPlugin());
+
+const getTopProjects = async () => {
+  let browser
+
+  if (process.env.CUSTOM_CHROMIUM_EXECUTABLE_PATH) {
+    browser = await puppeteer.launch({
+      headless: true,
+      executablePath: process.env.CUSTOM_CHROMIUM_EXECUTABLE_PATH,
+      args: [
+        '--no-sandbox',
+        '--disable-gpu',
+      ]
+    });
+  } else {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disabled-setupid-sandbox"]
+    });
+  }
+
+
+  return OpenseaScraper.rankings("7d", { browserInstance: browser }, "ethereum")
+}
 
 const getCollectionDetailsBySlug = async (slug) => axios({
   method: 'get',
