@@ -1,7 +1,7 @@
 version: "3"
 services:
   web:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile-test
     command: nodemon start
@@ -22,7 +22,7 @@ services:
       NODE_ENV: development
 
   configs-worker:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile-test
     command: yarn run start:configs-worker
@@ -40,6 +40,6 @@ services:
     image: mongo
     ports:
       - "27017:27017"
-  
+
   redis:
     image: redis

@@ -2,11 +2,14 @@
   "name": "crypto-ticker-api",
   "version": "1.0.0",
   "description": "Ticker API",
-  "main": "server.js",
+  "main": "bin/server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js",
-    "start:configs-worker": "node configs-worker.js"
+    "start": "node bin/server.js",
+    "format:check": "prettier --check .",
+    "format:write": "prettier --write .",
+    "lint:check": "eslint .",
+    "lint:fix": "eslint --fix ."
   },
   "keywords": [
     "Node",
@@ -36,5 +39,10 @@
     "pino-pretty": "^4.7.1",
     "redis": "^3.1.2",
     "uuid": "^3.3.2"
+  },
+  "devDependencies": {
+    "eslint": "^8.27.0",
+    "eslint-config-prettier": "^8.5.0",
+    "prettier": "^2.7.1"
   }
 }
