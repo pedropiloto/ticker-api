@@ -2,6 +2,7 @@ const Bugsnag = require("@bugsnag/js");
 const axios = require("axios");
 const Bottleneck = require("bottleneck");
 const pino = require("pino");
+const HttpsProxyAgent = require('https-proxy-agent')
 
 const RedisClient = require("../gateways/redis-gateway");
 
@@ -79,11 +80,25 @@ const getSupportedCurrencies = async () => {
 };
 
 const getSimplePrice = async (coin, currency) => {
+  const proxy = process.env.PROXY
+  const hasProxy = !!proxy
+  const config = {
+    method: "get",
+    url: `https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=${currency}&include_24hr_change=true`,
+  }
+
+  if (hasProxy) {
+    console.log('Using proxy')
+    const proxyAgent = new HttpsProxyAgent(proxy);
+    config['proxy'] = false
+    config['httpsAgent'] = proxyAgent
+} else {
+    console.log('Not using proxy')
+}
+
+  console.log(`https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=${currency}&include_24hr_change=true`)
   return limiter.wrap(() =>
-    axios({
-      method: "get",
-      url: `https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=${currency}&include_24hr_change=true`,
-    })
+    axios(config)
   )();
 };
 
