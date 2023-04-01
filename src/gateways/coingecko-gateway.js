@@ -95,11 +95,7 @@ const getSimplePrice = async (coin, currency) => {
 } else {
     console.log('Not using proxy')
 }
-
-  console.log(`https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=${currency}&include_24hr_change=true`)
-  return limiter.wrap(() =>
-    axios(config)
-  )();
+return axios(config)
 };
 
 const getCoinsMarket = async (page) => {
