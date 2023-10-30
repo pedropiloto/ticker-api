@@ -1,23 +1,20 @@
 const newrelic = require("newrelic");
 const Bugsnag = require("@bugsnag/js");
-const pino = require("pino");
 
 const OpencnftGateway = require("../gateways/opencnft-gateway");
 const RedisClient = require("../gateways/redis-gateway");
+const { getLogger } = require("../utils/logger");
 
-const logger = pino({
-  level: process.env.LOG_LEVEL || "info",
-  prettyPrint: { colorize: true },
-});
+const logger = getLogger();
+const TOP_CNFT_PROJECTS_REDIS_KEY = "CRYPTO:TOP_CNFT_PROJECTS_REDIS_KEY";
 
-// eslint-disable-next-line no-unused-vars
-const getFloorPriceByPolicy = async (req, res, next) => {
+const getFloorPriceByPolicy = async (req, res) => {
   addNewRelicCustomAttributes(req);
-  const CnftPolicy = req.params.policy;
+  const cnftPolicy = req.params.policy;
 
-  let cached_result = await RedisClient.get(CnftPolicy).catch((error) => {
+  let cached_result = await RedisClient.get(cnftPolicy).catch((error) => {
     logger.error(
-      `ERROR fetching cache: ${error.stack}, CnftPolicy: ${CnftPolicy}`
+      `ERROR fetching cache: ${error.stack}, cnftPolicy: ${cnftPolicy}`
     );
     Bugsnag.notify(error);
   });
@@ -32,21 +29,21 @@ const getFloorPriceByPolicy = async (req, res, next) => {
   newrelic.addCustomAttribute("cached", false);
 
   try {
-    const result = await OpencnftGateway.getFloorPrice(CnftPolicy);
+    const result = await OpencnftGateway.getFloorPrice(cnftPolicy);
     const floorPrice = Number(result.data["floor_price"]) / 1000000;
-    RedisClient.set(CnftPolicy, floorPrice).catch((error) => {
+    RedisClient.set(cnftPolicy, floorPrice).catch((error) => {
       logger.error(
-        `ERROR saving cache: ${error.stack}, CnftPolicy: ${CnftPolicy}`
+        `ERROR saving cache: ${error.stack}, cnftPolicy: ${cnftPolicy}`
       );
       Bugsnag.notify(error);
     });
     let expireTTL = process.env.REDIS_TICKER_MARKET_TTL || 5;
-    logger.info(`Setting floor price ${CnftPolicy}`);
-    RedisClient.expire(CnftPolicy, expireTTL);
+    logger.info(`Setting floor price ${cnftPolicy}`);
+    RedisClient.expire(cnftPolicy, expireTTL);
     logger.info(`sent result: ${floorPrice.toString()} from api`);
     res.send(floorPrice.toString());
   } catch (error) {
-    logger.error(`UNKNOWN ERROR: ${error.stack}, CnftPolicy: ${CnftPolicy}`);
+    logger.error(`UNKNOWN ERROR: ${error.stack}, cnftPolicy: ${cnftPolicy}`);
     Bugsnag.notify(error);
     newrelic.noticeError(error);
     res.status(500).send("Upstream Error");
@@ -54,14 +51,11 @@ const getFloorPriceByPolicy = async (req, res, next) => {
   }
 };
 
-// eslint-disable-next-line no-unused-vars
-const getTopProjects = async (req, res, next) => {
-  const TOP_PROJECTS_REDIS_KEY = "TOP_PROJECTS_REDIS_KEY";
-
-  let cachedResult = await RedisClient.get(TOP_PROJECTS_REDIS_KEY).catch(
+const getTopProjects = async (_, res) => {
+  let cachedResult = await RedisClient.get(TOP_CNFT_PROJECTS_REDIS_KEY).catch(
     (error) => {
       logger.error(
-        `ERROR fetching cache: ${error.stack}, TOP_PROJECTS_REDIS_KEY`
+        `ERROR fetching cache: ${error.stack}, CRYPTO:TOP_CNFT_PROJECTS_REDIS_KEY`
       );
       Bugsnag.notify(error);
     }
@@ -82,16 +76,17 @@ const getTopProjects = async (req, res, next) => {
       return { name: x.name, policy: x.policies[0] };
     });
 
-    RedisClient.set(TOP_PROJECTS_REDIS_KEY, JSON.stringify(ranking10)).catch(
-      (error) => {
-        logger.error(
-          `ERROR setting TOP_PROJECTS_REDIS_KEY cache: ${error.stack}`
-        );
-        Bugsnag.notify(error);
-      }
-    );
+    RedisClient.set(
+      TOP_CNFT_PROJECTS_REDIS_KEY,
+      JSON.stringify(ranking10)
+    ).catch((error) => {
+      logger.error(
+        `ERROR setting CRYPTO:TOP_CNFT_PROJECTS_REDIS_KEY cache: ${error.stack}`
+      );
+      Bugsnag.notify(error);
+    });
     let expireTTL = process.env.REDIS_TICKER_MARKET_TTL || 5;
-    RedisClient.expire(TOP_PROJECTS_REDIS_KEY, expireTTL);
+    RedisClient.expire(TOP_CNFT_PROJECTS_REDIS_KEY, expireTTL);
     res.json(ranking10);
   } catch (error) {
     logger.error(`UNKNOWN ERROR: ${error.stack}, `);

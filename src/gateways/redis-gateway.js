@@ -1,40 +1,19 @@
-require("dotenv").config();
 const redis = require("redis");
-const { promisify } = require("util");
 const Bugsnag = require("@bugsnag/js");
-const pino = require("pino");
+const { getLogger } = require("../utils/logger");
 
-const logger = pino({
-  level: process.env.LOG_LEVEL || "info",
-  prettyPrint: { colorize: true },
-});
+const logger = getLogger();
 
-const options = {
-  port: process.env.REDIS_PORT,
-  host: process.env.REDIS_URL,
-};
+const client = redis
+  .createClient({ url: process.env.REDIS_CONNECTION_STRING_URL })
+  .on("error", (error) => {
+    logger.error(`ERROR connecting to Redis: ${error}`);
+    Bugsnag.notify(error);
+  })
+  .on("connect", () => {
+    logger.info("Redis client connected");
+  });
 
-if (process.env.REDIS_PASSWORD) {
-  options["password"] = process.env.REDIS_PASSWORD;
-}
+client.connect();
 
-const client = redis.createClient(options);
-
-client.on("connect", () => {
-  logger.info("Redis client connected");
-});
-
-client.on("error", (error) => {
-  logger.error(`ERROR connecting to Redis: ${error}`);
-  Bugsnag.notify(error);
-});
-
-const get = promisify(client.get).bind(client);
-const set = promisify(client.set).bind(client);
-const expire = promisify(client.expire).bind(client);
-
-module.exports = {
-  get,
-  set,
-  expire,
-};
+module.exports = client;

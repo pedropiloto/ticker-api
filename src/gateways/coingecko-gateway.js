@@ -1,15 +1,12 @@
 const Bugsnag = require("@bugsnag/js");
 const axios = require("axios");
 const Bottleneck = require("bottleneck");
-const pino = require("pino");
-const HttpsProxyAgent = require('https-proxy-agent')
+const HttpsProxyAgent = require("https-proxy-agent");
 
 const RedisClient = require("../gateways/redis-gateway");
+const { getLogger } = require("../utils/logger");
 
-const logger = pino({
-  level: process.env.LOG_LEVEL || "info",
-  prettyPrint: { colorize: true },
-});
+const logger = getLogger();
 
 const limiter = new Bottleneck({
   maxConcurrent: 1,
@@ -80,22 +77,19 @@ const getSupportedCurrencies = async () => {
 };
 
 const getSimplePrice = async (coin, currency) => {
-  const proxy = process.env.PROXY
-  const hasProxy = !!proxy
+  const proxy = process.env.PROXY;
+  const hasProxy = !!proxy;
   const config = {
     method: "get",
     url: `https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=${currency}&include_24hr_change=true`,
-  }
+  };
 
   if (hasProxy) {
-    console.log('Using proxy')
     const proxyAgent = new HttpsProxyAgent(proxy);
-    config['proxy'] = false
-    config['httpsAgent'] = proxyAgent
-} else {
-    console.log('Not using proxy')
-}
-return axios(config)
+    config["proxy"] = false;
+    config["httpsAgent"] = proxyAgent;
+  }
+  return axios(config);
 };
 
 const getCoinsMarket = async (page) => {
@@ -107,9 +101,43 @@ const getCoinsMarket = async (page) => {
   )();
 };
 
+const getTopNFTProjects = async (chain) => {
+  const proxy = process.env.PROXY;
+  const hasProxy = !!proxy;
+  const config = {
+    method: "get",
+    url: `https://api.coingecko.com/api/v3/nfts/list?order=h24_volume_native_desc&asset_platform_id=${chain}`,
+  };
+
+  if (hasProxy) {
+    const proxyAgent = new HttpsProxyAgent(proxy);
+    config["proxy"] = false;
+    config["httpsAgent"] = proxyAgent;
+  }
+  return axios(config);
+};
+
+const getNFTProjectFloorPrice = async (slug) => {
+  const proxy = process.env.PROXY;
+  const hasProxy = !!proxy;
+  const config = {
+    method: "get",
+    url: `https://api.coingecko.com/api/v3/nfts/${slug}`,
+  };
+
+  if (hasProxy) {
+    const proxyAgent = new HttpsProxyAgent(proxy);
+    config["proxy"] = false;
+    config["httpsAgent"] = proxyAgent;
+  }
+  return axios(config);
+};
+
 module.exports = {
   getCoinsList,
   getSupportedCurrencies,
   getSimplePrice,
   getCoinsMarket,
+  getTopNFTProjects,
+  getNFTProjectFloorPrice,
 };

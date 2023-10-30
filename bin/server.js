@@ -3,69 +3,56 @@ const Bugsnag = require("@bugsnag/js");
 var BugsnagPluginExpress = require("@bugsnag/plugin-express");
 const express = require("express");
 const morganLogger = require("morgan");
-const getMetricEmitter = require("@newrelic/native-metrics");
-const pino = require("pino");
 require("dotenv").config();
 
 const TickerController = require("../src/controllers/ticker-controller");
 const CnftFloorController = require("../src/controllers/cnft-floor-controller");
 const EthNftFloorController = require("../src/controllers/eth-nft-floor-controller");
-const authMiddleware = require("../src/auth-middleware");
+const HealthController = require("../src/controllers/health-controller");
+const AuthMiddleware = require("../src/middlewares/auth-middleware");
+const NoAuthMiddleware = require("../src/middlewares/no-auth-middleware");
+const { getLogger } = require("../src/utils/logger");
+const logResponseTime = require("../src/middlewares/response-time-logger-middleware");
+const logError = require("../src/middlewares/error-logger-middleware");
+const responseTime = require("response-time");
 
-const logger = pino({
-  level: process.env.LOG_LEVEL || "info",
-  prettyPrint: { colorize: true },
-});
+const logger = getLogger();
 
 const app = express();
 
 app.use(morganLogger("dev"));
+app.use(responseTime(logResponseTime));
 
 // Routes
-app.get("/ticker", authMiddleware, TickerController.get);
-app.get("/ticker/config", authMiddleware, TickerController.getTickers);
-app.get("/coin/:name", authMiddleware, TickerController.getCoin);
-app.get("/currencies", authMiddleware, TickerController.getCurrencies);
+app.get("/ticker", AuthMiddleware, TickerController.get);
+app.get("/ticker/config", AuthMiddleware, TickerController.getTickers);
+app.get("/coin/:name", AuthMiddleware, TickerController.getCoin);
+app.get("/currencies", AuthMiddleware, TickerController.getCurrencies);
 app.get(
   "/cnft/:policy/floor",
-  authMiddleware,
+  AuthMiddleware,
   CnftFloorController.getFloorPriceByPolicy
 );
-app.get("/cnft/projects", authMiddleware, CnftFloorController.getTopProjects);
+app.get("/cnft/projects", AuthMiddleware, CnftFloorController.getTopProjects);
 app.get(
   "/eth_nft/projects",
-  authMiddleware,
+  AuthMiddleware,
   EthNftFloorController.getTopProjects
-);
-app.post(
-  "/eth_nft/projects",
-  authMiddleware,
-  EthNftFloorController.updateTopProjects
 );
 app.get(
   "/eth_nft/:slug/floor",
-  authMiddleware,
+  AuthMiddleware,
   EthNftFloorController.getFloorPriceBySlug
 );
+app.get("/health", NoAuthMiddleware, HealthController.health);
 
 const port = process.env.PORT || 3000;
+
+app.use(logError);
 
 app.listen(port, function () {
   logger.info(`Node server listening on port ${port}`);
 });
-
-var emitter = getMetricEmitter();
-if (emitter.gcEnabled) {
-  setInterval(() => {
-    emitter.getGCMetrics();
-  }, 1000);
-}
-
-if (emitter.loopEnabled) {
-  setInterval(() => {
-    emitter.getLoopMetrics();
-  }, 1000);
-}
 
 if (process.env.NODE_ENV === "production" && process.env.BUSGNAG_API_KEY) {
   Bugsnag.start({

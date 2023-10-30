@@ -1,15 +1,21 @@
 const axios = require("axios");
 
-const getFloorPrice = async (floor_price) =>
+const getFloorPrice = async (policy) =>
   axios({
     method: "get",
-    url: `https://api.opencnft.io/1/policy/${floor_price}/floor_price`,
+    url: `https://api.opencnft.io/2/collection/${policy}/floor_price`,
+    headers: {
+      "X-Api-Key": process.env.OPEN_CNFT_API_KEY,
+    },
   });
 
 const getTopProjects = async () =>
   axios({
     method: "get",
-    url: `https://api.opencnft.io/1/rank?window=24h`,
+    url: `https://api.opencnft.io/2/market/rank/collection`,
+    headers: {
+      "X-Api-Key": process.env.OPEN_CNFT_API_KEY,
+    },
   });
 
 module.exports = {

@@ -11,35 +11,12 @@ services:
     ports:
       - "3000:3000"
     links:
-      - mongo
       - redis
     environment:
-      MONGO_URL: mongodb://mongo:27017/crypto-tickers-api
-      REDIS_URL: redis
-      REDIS_PORT: 6379
+      REDIS_CONNECTION_STRING_URL: redis://default@redis:6379
       APP_NAME: crypto-ticker-api
       API_KEY: dummy
       NODE_ENV: development
-
-  configs-worker:
-    build:
-      context: .
-      dockerfile: Dockerfile-test
-    command: yarn run start:configs-worker
-    volumes:
-      - .:/usr/app/
-      - /usr/app/node_modules
-    links:
-      - mongo
-    environment:
-      MONGO_URL: mongodb://mongo:27017/crypto-tickers-api
-      APP_NAME: crypto-ticker-api
-      NODE_ENV: development
-
-  mongo:
-    image: mongo
-    ports:
-      - "27017:27017"
 
   redis:
     image: redis

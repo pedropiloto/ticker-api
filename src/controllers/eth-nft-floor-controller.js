@@ -1,54 +1,54 @@
 const newrelic = require("newrelic");
 const Bugsnag = require("@bugsnag/js");
-const pino = require("pino");
 
 const redisClient = require("../gateways/redis-gateway");
-const OpenseaGateway = require("../gateways/opensea-gateway");
+const CoingeckoGateway = require("../gateways/coingecko-gateway");
+const { getLogger } = require("../utils/logger");
 
-const logger = pino({
-  level: process.env.LOG_LEVEL || "info",
-  prettyPrint: { colorize: true },
-});
+const logger = getLogger();
 
-const NFT_ETH_TOP_PROJECTS_REDIS_KEY = "NFT_ETH_TOP_PROJECTS_REDIS_KEY";
+const NFT_ETH_TOP_PROJECTS_REDIS_KEY =
+  "CRYPTO:NFT_ETH_TOP_ETH_NFT_PROJECTS_REDIS_KEY";
 
-// eslint-disable-next-line no-unused-vars
-const getTopProjects = async (req, res, next) => {
+const getTopProjects = async (req, res) => {
+  addNewRelicCustomAttributes(req);
+
   let cachedResult = await redisClient
     .get(NFT_ETH_TOP_PROJECTS_REDIS_KEY)
     .catch((error) => {
       logger.error(
-        `ERROR fetching NFT_ETH_TOP_PROJECTS_REDIS_KEY cache: ${error.stack}`
+        `ERROR fetching cache: ${error.stack}, top ethereum nft projects`
       );
       Bugsnag.notify(error);
     });
 
-  if (cachedResult) {
-    newrelic.addCustomAttribute("cached", true);
-    res.json(JSON.parse(cachedResult));
-  } else {
-    res.status(500).send("Upstream Error");
-  }
-};
+  newrelic.addCustomAttribute("cached", cachedResult);
 
-// eslint-disable-next-line no-unused-vars
-const updateTopProjects = async (req, res, next) => {
+  if (cachedResult) {
+    res.json(JSON.parse(cachedResult));
+    return;
+  }
+
   try {
-    const result = await OpenseaGateway.getTopProjects();
-    const rankings = result.map((x) => {
-      return { name: x["name"], slug: x["slug"] };
+    const result = await CoingeckoGateway.getTopNFTProjects("ethereum");
+
+    const rankings = result.data.map((x) => {
+      return { name: x["name"], slug: x["id"] };
     });
+
     redisClient
       .set(NFT_ETH_TOP_PROJECTS_REDIS_KEY, JSON.stringify(rankings))
       .catch((error) => {
         logger.error(
-          `ERROR saving NFT_ETH_TOP_PROJECTS_REDIS_KEY cache: ${error.stack}`
+          `ERROR saving cache: ${error.stack}, top ethereum nft projects`
         );
         Bugsnag.notify(error);
       });
+    let expireTTL = process.env.REDIS_NFT_ETH_PROJECTS_LIST || 86400;
+    redisClient.expire(NFT_ETH_TOP_PROJECTS_REDIS_KEY, expireTTL);
     res.json(rankings);
   } catch (error) {
-    logger.error(`UNKNOWN ERROR: ${error.stack} `);
+    logger.error(`UNKNOWN ERROR: ${error.stack}, top ethereum nft projects`);
     Bugsnag.notify(error);
     newrelic.noticeError(error);
     res.status(500).send("Upstream Error");
@@ -56,11 +56,10 @@ const updateTopProjects = async (req, res, next) => {
   }
 };
 
-// eslint-disable-next-line no-unused-vars
-const getFloorPriceBySlug = async (req, res, next) => {
+const getFloorPriceBySlug = async (req, res) => {
   addNewRelicCustomAttributes(req);
   const ethProject = req.params.slug;
-  const ethProjectCacheKey = `ETH:${ethProject}`;
+  const ethProjectCacheKey = `CRYPTO:ETH:${ethProject}`;
 
   let cachedResult = await redisClient
     .get(ethProjectCacheKey)
@@ -74,14 +73,13 @@ const getFloorPriceBySlug = async (req, res, next) => {
   newrelic.addCustomAttribute("cached", cachedResult);
 
   if (cachedResult) {
-    logger.info(`sent result: ${cachedResult} from cache`);
     res.send(cachedResult);
     return;
   }
 
   try {
-    const result = await OpenseaGateway.getCollectionDetailsBySlug(ethProject);
-    const floorPrice = result.data["collection"]["stats"]["floor_price"];
+    const result = await CoingeckoGateway.getNFTProjectFloorPrice(ethProject);
+    const floorPrice = result.data["floor_price"]["native_currency"];
     redisClient.set(ethProjectCacheKey, floorPrice).catch((error) => {
       logger.error(
         `ERROR saving cache: ${error.stack}, ethProject: ${ethProject}`
@@ -91,7 +89,6 @@ const getFloorPriceBySlug = async (req, res, next) => {
     let expireTTL = process.env.REDIS_TICKER_MARKET_TTL || 5;
     logger.info(`Setting floor price ${ethProject} to expire in ${expireTTL}`);
     redisClient.expire(ethProject, expireTTL);
-    logger.info(`sent result: ${floorPrice.toString()} from api`);
     res.send(floorPrice.toString());
   } catch (error) {
     logger.error(`UNKNOWN ERROR: ${error.stack}, ethProject: ${ethProject}`);
@@ -109,7 +106,7 @@ const addNewRelicCustomAttributes = (req) => {
   );
   newrelic.addCustomAttribute(
     "device_model",
-    req.headers["device-model"] || "MULTI_CNFT"
+    req.headers["device-model"] || "MULTI_ETH"
   );
   newrelic.addCustomAttribute(
     "device_version",
@@ -118,4 +115,4 @@ const addNewRelicCustomAttributes = (req) => {
   newrelic.addCustomAttribute("ethProject", req.params.slug);
 };
 
-module.exports = { getTopProjects, updateTopProjects, getFloorPriceBySlug };
+module.exports = { getTopProjects, getFloorPriceBySlug };

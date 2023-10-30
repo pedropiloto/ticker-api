@@ -1,13 +1,10 @@
 const newrelic = require("newrelic");
 const Bugsnag = require("@bugsnag/js");
-const pino = require("pino");
 
 const TickerQuoteInteractor = require("../interactors/ticker-quote");
+const { getLogger } = require("../utils/logger");
 
-const logger = pino({
-  level: process.env.LOG_LEVEL || "info",
-  prettyPrint: { colorize: true },
-});
+const logger = getLogger();
 
 // eslint-disable-next-line no-unused-vars
 const get = async (req, res, next) => {
