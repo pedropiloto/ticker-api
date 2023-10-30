@@ -62,7 +62,6 @@ const call = async (tickerName) => {
     Math.round(Number(tickerQuoteObject[`${currency}_24h_change`]) * 100) / 100;
   const quoteResult = `${tickerQuoteObject[currency]};${change24h}`;
   const expireTTL = process.env.REDIS_TICKER_MARKET_TTL || 5;
-  logger.info(`Setting Ticker ${tickerName} to expire in ${expireTTL}`);
 
   RedisClient.set(tickerName, quoteResult).catch((error) => {
     logger.error(

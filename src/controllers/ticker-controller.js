@@ -12,9 +12,6 @@ const get = async (req, res, next) => {
   const tickerName = req.query.name;
   try {
     const resultQuote = await TickerQuoteInteractor.call(tickerName);
-    logger.info(
-      `Ticker ${tickerName} result quote: ${JSON.stringify(resultQuote)}`
-    );
     if (!resultQuote) {
       res.status(400).send("Unsupported");
       return;
