@@ -29,7 +29,7 @@ const call = async (tickerName) => {
   const currency = tickerArray[1].toLowerCase();
   const coinsList = await CoingeckoGateway.getCoinsList();
   const providerCoin = coinsList.find((x) => x["symbol"] === coinSymbol);
-
+  
   if (!providerCoin) {
     logger.error(`Unsupported ticker ${tickerName}`);
     return;
@@ -40,7 +40,16 @@ const call = async (tickerName) => {
     result = (await CoingeckoGateway.getSimplePrice(coinProviderId, currency))
       .data;
   } catch (error) {
-    logger.error(`Error fetching ticker ${tickerName} from provider`);
+    if (error && error.response && error.response.status && error.response.status === 429) {
+      const cachedResult = await RedisClient.get(CoingeckoGateway.COINGECKO_USE_PROXY_KEY).catch((_) => {});
+      if(!cachedResult){
+        logger.info('Turning on PROXY for coingecko');
+        RedisClient.set(CoingeckoGateway.COINGECKO_USE_PROXY_KEY, "true").catch((_) => {});
+        RedisClient.expire(CoingeckoGateway.COINGECKO_USE_PROXY_KEY, CoingeckoGateway.COINGECKO_USE_PROXY_KEY_TTL);
+      }
+    }
+    
+    logger.error(`Error fetching ticker ${tickerName} from provider: ${error}`);
     Bugsnag.notify(error);
     return;
   }

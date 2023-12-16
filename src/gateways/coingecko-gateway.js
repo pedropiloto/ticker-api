@@ -6,6 +6,9 @@ const HttpsProxyAgent = require("https-proxy-agent");
 const RedisClient = require("../gateways/redis-gateway");
 const { getLogger } = require("../utils/logger");
 
+const COINGECKO_USE_PROXY_KEY = "COINGECKO_USE_PROXY_KEY";
+const COINGECKO_USE_PROXY_KEY_TTL = 86400;
+
 const logger = getLogger();
 
 const limiter = new Bottleneck({
@@ -23,26 +26,47 @@ const getCoinsList = async () => {
   });
 
   if (data) {
+    logger.info(
+      `Retrieving coins list from cache`
+    );
     return JSON.parse(data);
   }
 
-  data = (
-    await limiter.wrap(() =>
-      axios({
-        method: "get",
-        url: "https://api.coingecko.com/api/v3/coins/list",
-      })
-    )()
-  ).data;
-
   try {
-    RedisClient.set(cacheKey, JSON.stringify(data));
-    RedisClient.expire(cacheKey, 60 * 60 * 6);
+
+    const proxy = await getProxy();
+    const config = {
+      method: "get",
+      url: "https://api.coingecko.com/api/v3/coins/list",
+    };
+
+    if (!!proxy) {
+      const proxyAgent = new HttpsProxyAgent(proxy);
+      config["proxy"] = false;
+      config["httpsAgent"] = proxyAgent;
+      logger.info(
+        `Adding proxy to coingecko request`
+      );
+    }
+
+    data = (
+      await limiter.wrap(() =>
+        axios(config)
+      )()
+    ).data;
+
+    try {
+      RedisClient.set(cacheKey, JSON.stringify(data));
+      RedisClient.expire(cacheKey, 60 * 60 * 6);
+    } catch (error) {
+      logger.error(`ERROR saving coins list in cache: ${error.stack}`);
+      Bugsnag.notify(error);
+    }
   } catch (error) {
-    logger.error(`ERROR saving coins list in cache: ${error.stack}`);
-    Bugsnag.notify(error);
+    logger.error(`ERROR retrieving coins list from coingecko ${error.stack}`);
   }
   return data;
+
 };
 
 const getSupportedCurrencies = async () => {
@@ -58,12 +82,24 @@ const getSupportedCurrencies = async () => {
     return JSON.parse(data);
   }
 
+  const proxy = await getProxy();
+  const config = {
+    method: "get",
+    url: "https://api.coingecko.com/api/v3/simple/supported_vs_currencies",
+  }
+
+  if (!!proxy) {
+    const proxyAgent = new HttpsProxyAgent(proxy);
+    config["proxy"] = false;
+    config["httpsAgent"] = proxyAgent;
+    logger.info(
+      `Adding proxy to coingecko request`
+    );
+  }
+
   data = (
     await limiter.wrap(() =>
-      axios({
-        method: "get",
-        url: "https://api.coingecko.com/api/v3/simple/supported_vs_currencies",
-      })
+      axios(config)
     )()
   ).data;
   try {
@@ -77,39 +113,51 @@ const getSupportedCurrencies = async () => {
 };
 
 const getSimplePrice = async (coin, currency) => {
-  const proxy = process.env.PROXY;
-  const hasProxy = !!proxy;
+  const proxy = await getProxy();
+  console.log("cenas", proxy)
   const config = {
     method: "get",
     url: `https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=${currency}&include_24hr_change=true`,
   };
 
-  if (hasProxy) {
+  if (!!proxy) {
     const proxyAgent = new HttpsProxyAgent(proxy);
     config["proxy"] = false;
     config["httpsAgent"] = proxyAgent;
+    logger.info(
+      `Adding proxy to coingecko request`
+    );
   }
   return axios(config);
 };
 
 const getCoinsMarket = async (page) => {
+  const proxy = await getProxy();
+  const config = {
+    method: "get",
+    url: `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&price_change_percentage=24h&order=market_cap_desc&per_page=250&page=${page}`,
+  }
+  if (!!proxy) {
+    const proxyAgent = new HttpsProxyAgent(proxy);
+    config["proxy"] = false;
+    config["httpsAgent"] = proxyAgent;
+    logger.info(
+      `Adding proxy to coingecko request: ${tickerName}`
+    );
+  }
   return limiter.wrap(() =>
-    axios({
-      method: "get",
-      url: `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&price_change_percentage=24h&order=market_cap_desc&per_page=250&page=${page}`,
-    })
+    axios(config)
   )();
 };
 
 const getTopNFTProjects = async (chain) => {
-  const proxy = process.env.PROXY;
-  const hasProxy = !!proxy;
+  const proxy = await getProxy();
   const config = {
     method: "get",
     url: `https://api.coingecko.com/api/v3/nfts/list?order=h24_volume_native_desc&asset_platform_id=${chain}`,
   };
 
-  if (hasProxy) {
+  if (proxy) {
     const proxyAgent = new HttpsProxyAgent(proxy);
     config["proxy"] = false;
     config["httpsAgent"] = proxyAgent;
@@ -118,20 +166,32 @@ const getTopNFTProjects = async (chain) => {
 };
 
 const getNFTProjectFloorPrice = async (slug) => {
-  const proxy = process.env.PROXY;
-  const hasProxy = !!proxy;
+  const proxy = getProxy();
   const config = {
     method: "get",
     url: `https://api.coingecko.com/api/v3/nfts/${slug}`,
   };
 
-  if (hasProxy) {
+  if (!!proxy) {
     const proxyAgent = new HttpsProxyAgent(proxy);
     config["proxy"] = false;
     config["httpsAgent"] = proxyAgent;
   }
   return axios(config);
 };
+
+const getProxy = async () => {
+  const proxy = process.env.PROXY;
+  const forceProxy = process.env.FORCE_PROXY;
+  if(!proxy){
+    return undefined;
+  }
+  const systemUserProxyActivated = await RedisClient.get(COINGECKO_USE_PROXY_KEY).catch((_) => {});
+
+  if(forceProxy === "true" || systemUserProxyActivated === "true"){
+    return proxy
+  };
+}
 
 module.exports = {
   getCoinsList,
@@ -140,4 +200,6 @@ module.exports = {
   getCoinsMarket,
   getTopNFTProjects,
   getNFTProjectFloorPrice,
+  COINGECKO_USE_PROXY_KEY,
+  COINGECKO_USE_PROXY_KEY_TTL
 };
