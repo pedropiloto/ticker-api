@@ -3,6 +3,7 @@ const Bugsnag = require("@bugsnag/js");
 const CoingeckoGateway = require("../gateways/coingecko-gateway");
 const RedisClient = require("../gateways/redis-gateway");
 const SUPPORTED_CURRENCIES = require("../supported-currencies");
+const COINGECKO_TICKER_EXCEPTIONS_MAP = require("../coingecko-ticker-exceptions-map");
 const { getLogger } = require("../utils/logger");
 
 const logger = getLogger();
@@ -27,14 +28,19 @@ const call = async (tickerName) => {
 
   const coinSymbol = tickerArray[0].toLowerCase();
   const currency = tickerArray[1].toLowerCase();
+  let coinProviderId;
+  
+  if(COINGECKO_TICKER_EXCEPTIONS_MAP[coinSymbol])  {
+    coinProviderId = COINGECKO_TICKER_EXCEPTIONS_MAP[coinSymbol]
+  } else {
   const coinsList = await CoingeckoGateway.getCoinsList();
   const providerCoin = coinsList.find((x) => x["symbol"] === coinSymbol);
-  
   if (!providerCoin) {
     logger.error(`Unsupported ticker ${tickerName}`);
     return;
   }
-  const coinProviderId = providerCoin["id"];
+  coinProviderId = providerCoin["id"];
+  }
   let result;
   try {
     result = (await CoingeckoGateway.getSimplePrice(coinProviderId, currency))

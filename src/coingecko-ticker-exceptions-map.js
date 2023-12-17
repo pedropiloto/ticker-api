@@ -1,0 +1,3 @@
+module.exports = {
+  "ada": "cardano"
+};
