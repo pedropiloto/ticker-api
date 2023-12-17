@@ -48,7 +48,7 @@ const call = async (tickerName) => {
   } catch (error) {
     if (error && error.response && error.response.status && error.response.status === 429) {
       const cachedResult = await RedisClient.get(CoingeckoGateway.COINGECKO_USE_PROXY_KEY).catch((_) => {});
-      if(!cachedResult){
+      if(cachedResult !== "true"){
         logger.info('Turning on PROXY for coingecko');
         RedisClient.set(CoingeckoGateway.COINGECKO_USE_PROXY_KEY, "true").catch((_) => {});
         RedisClient.expire(CoingeckoGateway.COINGECKO_USE_PROXY_KEY, CoingeckoGateway.COINGECKO_USE_PROXY_KEY_TTL);
