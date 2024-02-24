@@ -8,6 +8,9 @@ const { getLogger } = require("../utils/logger");
 
 const COINGECKO_USE_PROXY_KEY = "COINGECKO_USE_PROXY_KEY";
 const COINGECKO_USE_PROXY_KEY_TTL = 3600;
+const COINGECKO_RATE_LIMIT_REQUESTS_KEY = "COINGECKO_RATE_LIMIT_REQUESTS_KEY";
+const COINGECKO_RATE_LIMIT_REQUESTS_TTL = 60;
+const COINGECKO_RATE_LIMIT_MAX_REQUESTS = 30;
 
 const logger = getLogger();
 
@@ -15,6 +18,8 @@ const limiter = new Bottleneck({
   maxConcurrent: 1,
   minTime: 5000, // pick a value that makes sense for your use case
 });
+
+const lock = require("redis-lock")(RedisClient);
 
 const getCoinsList = async () => {
   const cacheKey = "CoinsListCacheKey";
@@ -52,14 +57,14 @@ const getCoinsList = async () => {
     data = (
       await limiter.wrap(() =>
         axios(config)
-        .then(async (result) => {
-          evaluateRequestTurnOffProxy(!!proxy);
-          return result;
-        })
-        .catch(async (error) => {
-          await evaluateRequestTurnOnProxy(!!proxy);
-          return error
-        })
+          .then(async (result) => {
+            evaluateRequestTurnOffProxy(!!proxy);
+            return result;
+          })
+          .catch(async (error) => {
+            await evaluateRequestTurnOnProxy(!!proxy);
+            return error
+          })
       )()
     ).data;
 
@@ -108,14 +113,14 @@ const getSupportedCurrencies = async () => {
   data = (
     await limiter.wrap(() =>
       axios(config)
-      .then(async (result) => {
-        evaluateRequestTurnOffProxy(!!proxy);
-        return result;
-      })
-      .catch(async (error) => {
-        await evaluateRequestTurnOnProxy(!!proxy);
-        return error
-      })
+        .then(async (result) => {
+          evaluateRequestTurnOffProxy(!!proxy);
+          return result;
+        })
+        .catch(async (error) => {
+          await evaluateRequestTurnOnProxy(!!proxy);
+          return error
+        })
     )()
   ).data;
   try {
@@ -173,14 +178,14 @@ const getCoinsMarket = async (page) => {
   }
   return limiter.wrap(() =>
     axios(config)
-    .then(async (result) => {
-      evaluateRequestTurnOffProxy(!!proxy);
-      return result;
-    })
-    .catch(async (error) => {
-      await evaluateRequestTurnOnProxy(!!proxy);
-      return error
-    })
+      .then(async (result) => {
+        evaluateRequestTurnOffProxy(!!proxy);
+        return result;
+      })
+      .catch(async (error) => {
+        await evaluateRequestTurnOnProxy(!!proxy);
+        return error
+      })
   )();
 };
 
@@ -197,14 +202,14 @@ const getTopNFTProjects = async (chain) => {
     config["httpsAgent"] = proxyAgent;
   }
   return axios(config)
-  .then(async (result) => {
-    evaluateRequestTurnOffProxy(!!proxy);
-    return result;
-  })
-  .catch(async (error) => {
-    await evaluateRequestTurnOnProxy(!!proxy);
-    return error
-  })
+    .then(async (result) => {
+      evaluateRequestTurnOffProxy(!!proxy);
+      return result;
+    })
+    .catch(async (error) => {
+      await evaluateRequestTurnOnProxy(!!proxy);
+      return error
+    })
 };
 
 const getNFTProjectFloorPrice = async (slug) => {
@@ -220,14 +225,33 @@ const getNFTProjectFloorPrice = async (slug) => {
     config["httpsAgent"] = proxyAgent;
   }
   return axios(config)
-  .then(async (result) => {
-    evaluateRequestTurnOffProxy(!!proxy);
-    return result;
-  })
-  .catch(async (error) => {
-    await evaluateRequestTurnOnProxy(!!proxy);
-    return error
-  });
+    .then(async (result) => {
+      evaluateRequestTurnOffProxy(!!proxy);
+      return result;
+    })
+    .catch(async (error) => {
+      await evaluateRequestTurnOnProxy(!!proxy);
+      return error
+    });
+};
+
+const executeRateLimitedRequest = async (func, ...args) => {
+  const done = await lock("coingeckoRequest");
+  setTimeout(done, 2000);
+  const requestsOngoing = Number(await RedisClient.get(COINGECKO_RATE_LIMIT_REQUESTS_KEY).catch((_) => {return 0}));
+  console.log(`Evaluating coingecko ongoing requests: ${requestsOngoing}`);
+  logger.info(`Evaluating coingecko ongoing requests: ${requestsOngoing}`);
+  if (requestsOngoing < COINGECKO_RATE_LIMIT_MAX_REQUESTS) {
+    logger.info(`Allowing non proxy coingecko request. Coingecko ongoing requests: ${requestsOngoing}`);
+    RedisClient.set(COINGECKO_RATE_LIMIT_REQUESTS_KEY, requestsOngoing + 1).catch((_) => { });
+    RedisClient.expire(COINGECKO_USE_PROXY_KEY, COINGECKO_RATE_LIMIT_REQUESTS_TTL);
+  } else{
+    logger.info(`Not allowing non proxy coingecko request. Coingecko ongoing requests: ${requestsOngoing}`);
+    RedisClient.set(COINGECKO_USE_PROXY_KEY, "true").catch((_) => { });
+    RedisClient.expire(COINGECKO_USE_PROXY_KEY, COINGECKO_USE_PROXY_KEY_TTL);
+  }
+  await done()
+  return func(...args)
 };
 
 const evaluateRequestTurnOffProxy = (isProxyRequest) => {
@@ -267,6 +291,7 @@ module.exports = {
   getCoinsMarket,
   getTopNFTProjects,
   getNFTProjectFloorPrice,
+  executeRateLimitedRequest,
   COINGECKO_USE_PROXY_KEY,
   COINGECKO_USE_PROXY_KEY_TTL
 };
