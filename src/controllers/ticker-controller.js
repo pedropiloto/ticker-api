@@ -10,19 +10,30 @@ const logger = getLogger();
 const get = async (req, res, next) => {
   addNewRelicCustomAttributes(req);
   const tickerName = req.query.name;
-  try {
-    const resultQuote = await TickerQuoteInteractor.call(tickerName);
-    if (!resultQuote) {
-      res.status(400).send("Unsupported");
+  let retries = 0;
+  const maxRetries = 2;
+
+  while (retries <= maxRetries) {
+    try {
+      const resultQuote = await TickerQuoteInteractor.call(tickerName);
+      if (!resultQuote && retries === maxRetries) {
+        res.status(400).send("Unsupported");
+        return;
+      }
+      newrelic.addCustomAttribute("cached", resultQuote.isCached);
+      res.send(resultQuote.value);
       return;
+    } catch (error) {
+      logger.error(`RETRY ${retries}. UNKNOWN ERROR: ${error.stack}, ticker: ${tickerName}.`);
+      if (retries === maxRetries) {
+        logger.error(`MAX RETRIES. UNKNOWN ERROR: ${error.stack}, ticker: ${tickerName}.`);
+        Bugsnag.notify(error);
+        newrelic.noticeError(error);
+        res.status(500).send("Upstream Error");
+        return;
+      }
+      retries++;
     }
-    newrelic.addCustomAttribute("cached", resultQuote.isCached);
-    res.send(resultQuote.value);
-  } catch (error) {
-    logger.error(`UNKNOWN ERROR: ${error.stack}, ticker: ${tickerName}`);
-    Bugsnag.notify(error);
-    newrelic.noticeError(error);
-    res.status(500).send("Upstream Error");
   }
 };
 
