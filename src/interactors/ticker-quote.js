@@ -29,12 +29,11 @@ const call = async (tickerName) => {
   const coinSymbol = tickerArray[0].toLowerCase();
   const currency = tickerArray[1].toLowerCase();
   let coinProviderId;
-
-  if (COINGECKO_TICKER_EXCEPTIONS_MAP[coinSymbol]) {
-    coinProviderId = COINGECKO_TICKER_EXCEPTIONS_MAP[coinSymbol]
-  } else {
-    let result;
-    try {
+  let result;
+  try {
+    if (COINGECKO_TICKER_EXCEPTIONS_MAP[coinSymbol]) {
+      coinProviderId = COINGECKO_TICKER_EXCEPTIONS_MAP[coinSymbol]
+    } else {
       const coinsList = await CoingeckoGateway.executeRateLimitedRequest(CoingeckoGateway.getCoinsList);
       const providerCoin = coinsList.find((x) => x["symbol"] === coinSymbol);
       if (!providerCoin) {
@@ -42,49 +41,49 @@ const call = async (tickerName) => {
         return;
       }
       coinProviderId = providerCoin["id"];
-      result = (await CoingeckoGateway.executeRateLimitedRequest(CoingeckoGateway.getSimplePrice, coinProviderId, currency))
-        .data;
-    } catch (error) {
-      // if (error && error.response && error.response.status && error.response.status === 429) {
-      logger.error(`Error fetching ticker ${tickerName} from provider: ${error}`);
-      Bugsnag.notify(error);
-      return;
     }
-
-    if (!result ) {
-      logger.error(
-        `Result undefined. Provider did not return quote for ticker: ${tickerName} -> ${coinProviderId} - ${currency}`
-      );
-      return;
-    }
-    
-    const tickerQuoteObject = result[coinProviderId];
-    if(!tickerQuoteObject ||
-      !tickerQuoteObject[currency] ||
-      !tickerQuoteObject[`${currency}_24h_change`]
-    ) {
-      logger.error(
-        `Provider did not return quote for ticker: ${tickerName} -> ${coinProviderId} - ${currency}`
-      );
-      return;
-    }
-
-    const change24h =
-      Math.round(Number(tickerQuoteObject[`${currency}_24h_change`]) * 100) / 100;
-    const quoteResult = `${tickerQuoteObject[currency]};${change24h}`;
-    const expireTTL = process.env.REDIS_TICKER_MARKET_TTL || 5;
-
-    RedisClient.set(tickerName, quoteResult).catch((error) => {
-      logger.error(
-        `ERROR saving cache: ${error.stack}, ticker_name: ${tickerName}`
-      );
-      Bugsnag.notify(error);
-    });
-    RedisClient.expire(tickerName, expireTTL);
-
-    return { value: quoteResult, isCached: false };
+    result = (await CoingeckoGateway.executeRateLimitedRequest(CoingeckoGateway.getSimplePrice, coinProviderId, currency))
+      .data;
+  } catch (error) {
+    // if (error && error.response && error.response.status && error.response.status === 429) {
+    logger.error(`Error fetching ticker ${tickerName} from provider: ${error}`);
+    Bugsnag.notify(error);
+    return;
   }
-};
+
+  if (!result) {
+    logger.error(
+      `Result undefined. Provider did not return quote for ticker: ${tickerName} -> ${coinProviderId} - ${currency}`
+    );
+    return;
+  }
+
+  const tickerQuoteObject = result[coinProviderId];
+  if (!tickerQuoteObject ||
+    !tickerQuoteObject[currency] ||
+    !tickerQuoteObject[`${currency}_24h_change`]
+  ) {
+    logger.error(
+      `Provider did not return quote for ticker: ${tickerName} -> ${coinProviderId} - ${currency}`
+    );
+    return;
+  }
+
+  const change24h =
+    Math.round(Number(tickerQuoteObject[`${currency}_24h_change`]) * 100) / 100;
+  const quoteResult = `${tickerQuoteObject[currency]};${change24h}`;
+  const expireTTL = process.env.REDIS_TICKER_MARKET_TTL || 5;
+
+  RedisClient.set(tickerName, quoteResult).catch((error) => {
+    logger.error(
+      `ERROR saving cache: ${error.stack}, ticker_name: ${tickerName}`
+    );
+    Bugsnag.notify(error);
+  });
+  RedisClient.expire(tickerName, expireTTL);
+
+  return { value: quoteResult, isCached: false };
+}
 
 const listConfig = async (startIndex, endIndex) => {
   const coinsList = await CoingeckoGateway.executeRateLimitedRequest(CoingeckoGateway.getCoinsList)
