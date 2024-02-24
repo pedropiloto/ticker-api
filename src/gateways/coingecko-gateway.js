@@ -240,23 +240,25 @@ const executeRateLimitedRequest = async (func, ...args) => {
   setTimeout(done, 2000);
   let requestsOngoing;
   try {
-  requestsOngoing = Number(await RedisClient.get(COINGECKO_RATE_LIMIT_REQUESTS_KEY).catch((_) => {return 0}));
-  if(!requestsOngoing){
-    requestsOngoing = 0;
-  }
-  }catch(error){
+    requestsOngoing = Number(await RedisClient.get(COINGECKO_RATE_LIMIT_REQUESTS_KEY).catch((_) => { return 0 }));
+    if (!requestsOngoing) {
+      requestsOngoing = 0;
+    }
+  } catch (error) {
     logger.error(`Error when retrieving coingecko ongoing requests: ${error.stack}.`);
     requestsOngoing = 0
   }
   logger.info(`Evaluating coingecko ongoing requests: ${requestsOngoing}`);
-  if (requestsOngoing === 0) {
-    logger.info(`Resetting coingecko ongoing requests TTL to ${COINGECKO_RATE_LIMIT_REQUESTS_TTL} seconds.`);
-    RedisClient.expire(COINGECKO_RATE_LIMIT_REQUESTS_KEY, COINGECKO_RATE_LIMIT_REQUESTS_TTL);
-  }
   if (requestsOngoing < COINGECKO_RATE_LIMIT_MAX_REQUESTS) {
     logger.info(`Allowing non proxy coingecko request. Coingecko ongoing requests: ${requestsOngoing}`);
     RedisClient.set(COINGECKO_RATE_LIMIT_REQUESTS_KEY, requestsOngoing + 1).catch((_) => { });
-  } else{
+    const ttl = await RedisClient.ttl(COINGECKO_RATE_LIMIT_REQUESTS_KEY).catch((_) => { return 0 })
+    RedisClient.expire(COINGECKO_RATE_LIMIT_REQUESTS_KEY, ttl);
+    if ( ttl <= 0) {
+      logger.info(`Resetting coingecko ongoing requests TTL to ${COINGECKO_RATE_LIMIT_REQUESTS_TTL} seconds.`);
+      RedisClient.expire(COINGECKO_RATE_LIMIT_REQUESTS_KEY, COINGECKO_RATE_LIMIT_REQUESTS_TTL);
+    }
+  } else {
     logger.info(`Not allowing non proxy coingecko request. Coingecko ongoing requests: ${requestsOngoing}`);
     args.push(true);
   }
