@@ -30,7 +30,7 @@ const getTopProjects = async (req, res) => {
   }
 
   try {
-    const result = await CoingeckoGateway.getTopNFTProjects("ethereum");
+    const result = await CoingeckoGateway.executeRateLimitedRequest(CoingeckoGateway.getTopNFTProjects, "ethereum");
 
     const rankings = result.data.map((x) => {
       return { name: x["name"], slug: x["id"] };
@@ -78,7 +78,7 @@ const getFloorPriceBySlug = async (req, res) => {
   }
 
   try {
-    const result = await CoingeckoGateway.getNFTProjectFloorPrice(ethProject);
+    const result = await CoingeckoGateway.executeRateLimitedRequest(CoingeckoGateway.getNFTProjectFloorPrice, ethProject);
     const floorPrice = result.data["floor_price"]["native_currency"];
     redisClient.set(ethProjectCacheKey, floorPrice).catch((error) => {
       logger.error(

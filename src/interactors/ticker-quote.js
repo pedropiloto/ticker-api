@@ -35,7 +35,7 @@ const call = async (tickerName) => {
   } else {
     let result;
     try {
-      const coinsList = await CoingeckoGateway.getCoinsList();
+      const coinsList = await CoingeckoGateway.executeRateLimitedRequest(CoingeckoGateway.getCoinsList);
       const providerCoin = coinsList.find((x) => x["symbol"] === coinSymbol);
       if (!providerCoin) {
         logger.error(`Unsupported ticker ${tickerName}`);
@@ -87,7 +87,7 @@ const call = async (tickerName) => {
 };
 
 const listConfig = async (startIndex, endIndex) => {
-  const coinsList = await CoingeckoGateway.getCoinsList();
+  const coinsList = await CoingeckoGateway.executeRateLimitedRequest(CoingeckoGateway.getCoinsList)
   const currenciesList = SUPPORTED_CURRENCIES;
 
   return {
@@ -102,7 +102,7 @@ const listConfig = async (startIndex, endIndex) => {
 };
 
 const getCoin = async (coinSymbol) => {
-  const coinsList = await CoingeckoGateway.getCoinsList();
+  const coinsList = await CoingeckoGateway.executeRateLimitedRequest(CoingeckoGateway.getCoinsList);
   const coin = coinsList.find((x) => x["symbol"] === coinSymbol.toLowerCase());
 
   if (!coin) {
