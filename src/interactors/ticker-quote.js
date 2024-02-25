@@ -35,6 +35,9 @@ const call = async (tickerName) => {
       coinProviderId = COINGECKO_TICKER_EXCEPTIONS_MAP[coinSymbol]
     } else {
       const coinsList = await CoingeckoGateway.executeRateLimitedRequest(CoingeckoGateway.getCoinsList);
+      if(!coinsList){
+        throw new Error("Failed to retrieve coinslist");
+      }
       const providerCoin = coinsList.find((x) => x["symbol"] === coinSymbol);
       if (!providerCoin) {
         logger.error(`Unsupported ticker ${tickerName}`);
