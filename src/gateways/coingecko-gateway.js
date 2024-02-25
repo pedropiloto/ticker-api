@@ -68,7 +68,7 @@ const getCoinsList = async (forceRequestProxy = false) => {
 
     try {
       RedisClient.set(cacheKey, JSON.stringify(data));
-      RedisClient.expire(cacheKey, 60 * 60 * 6);
+      RedisClient.expire(cacheKey, 60 * 60 * 24 * 7);
     } catch (error) {
       logger.error(`ERROR saving coins list in cache: ${error.stack}`);
       Bugsnag.notify(error);
