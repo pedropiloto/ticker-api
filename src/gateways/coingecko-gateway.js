@@ -55,8 +55,7 @@ const getCoinsList = async (forceRequestProxy = false) => {
     }
 
     data = (
-      await limiter.wrap(() =>
-        axios(config)
+        await axios(config)
           .then(async (result) => {
             evaluateRequestTurnOffProxy(!!proxy);
             return result;
@@ -65,7 +64,6 @@ const getCoinsList = async (forceRequestProxy = false) => {
             await evaluateRequestTurnOnProxy(!!proxy);
             return error
           })
-      )()
     ).data;
 
     try {
@@ -111,8 +109,7 @@ const getSupportedCurrencies = async (forceRequestProxy = false) => {
   }
 
   data = (
-    await limiter.wrap(() =>
-      axios(config)
+      await axios(config)
         .then(async (result) => {
           evaluateRequestTurnOffProxy(!!proxy);
           return result;
@@ -121,8 +118,7 @@ const getSupportedCurrencies = async (forceRequestProxy = false) => {
           await evaluateRequestTurnOnProxy(!!proxy);
           return error
         })
-    )()
-  ).data;
+    ).data;
   try {
     RedisClient.set(cacheKey, JSON.stringify(data));
     RedisClient.expire(cacheKey, 60 * 60 * 6);
@@ -148,8 +144,7 @@ const getSimplePrice = async (coin, currency, forceRequestProxy = false) => {
       `Adding proxy to coingecko request`
     );
   }
-  return limiter.wrap(() =>
-    axios(config)
+    return axios(config)
       .then(async (result) => {
         evaluateRequestTurnOffProxy(!!proxy);
         return result;
@@ -158,8 +153,7 @@ const getSimplePrice = async (coin, currency, forceRequestProxy = false) => {
         logger.info(`Evaluating turn ON proxy: ${error}`);
         await evaluateRequestTurnOnProxy(!!proxy);
         return error
-      })
-  )();
+      });
 };
 
 const getCoinsMarket = async (page, forceRequestProxy = false) => {
@@ -176,8 +170,7 @@ const getCoinsMarket = async (page, forceRequestProxy = false) => {
       `Adding proxy to coingecko request: ${page}`
     );
   }
-  return limiter.wrap(() =>
-    axios(config)
+    return axios(config)
       .then(async (result) => {
         evaluateRequestTurnOffProxy(!!proxy);
         return result;
@@ -185,8 +178,7 @@ const getCoinsMarket = async (page, forceRequestProxy = false) => {
       .catch(async (error) => {
         await evaluateRequestTurnOnProxy(!!proxy);
         return error
-      })
-  )();
+      });
 };
 
 const getTopNFTProjects = async (chain, forceRequestProxy = false) => {

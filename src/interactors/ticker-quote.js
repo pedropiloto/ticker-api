@@ -83,7 +83,7 @@ const call = async (tickerName) => {
   RedisClient.expire(tickerName, expireTTL);
 
   return { value: quoteResult, isCached: false };
-}
+};
 
 const listConfig = async (startIndex, endIndex) => {
   const coinsList = await CoingeckoGateway.executeRateLimitedRequest(CoingeckoGateway.getCoinsList)
