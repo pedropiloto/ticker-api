@@ -1,3 +1,4 @@
+const newrelic = require("newrelic");
 const Bugsnag = require("@bugsnag/js");
 const axios = require("axios");
 const Bottleneck = require("bottleneck");
@@ -279,14 +280,22 @@ const evaluateRequestTurnOnProxy = async (isProxyRequest) => {
 const getProxy = async (forceRequestProxy = false) => {
   const proxy = process.env.PROXY;
   const forceProxy = process.env.FORCE_PROXY;
+  let proxyResult;
   if (!proxy) {
+    newrelic.addCustomAttribute(
+      "proxy", false
+    )
     return undefined;
   }
   const systemUserProxyActivated = await RedisClient.get(COINGECKO_USE_PROXY_KEY).catch((_) => { });
 
   if (!!forceRequestProxy || forceProxy === "true" || systemUserProxyActivated === "true") {
-    return proxy
-  };
+    proxyResult =  proxy;
+  }
+  newrelic.addCustomAttribute(
+    "proxy", !!proxyResult
+  )
+  return proxyResult;
 }
 
 module.exports = {
