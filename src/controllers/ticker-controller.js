@@ -11,7 +11,7 @@ const get = async (req, res, next) => {
   addNewRelicCustomAttributes(req);
   const tickerName = req.query.name;
   let retries = 0;
-  const maxRetries = 2;
+  const maxRetries = 1;
 
   while (retries <= maxRetries) {
     try {

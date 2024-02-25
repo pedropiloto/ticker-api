@@ -7,7 +7,7 @@ const RedisClient = require("../gateways/redis-gateway");
 const { getLogger } = require("../utils/logger");
 
 const COINGECKO_USE_PROXY_KEY = "COINGECKO_USE_PROXY_KEY";
-const COINGECKO_USE_PROXY_KEY_TTL = 3600;
+const COINGECKO_USE_PROXY_KEY_TTL = 600;
 const COINGECKO_RATE_LIMIT_REQUESTS_KEY = "COINGECKO_RATE_LIMIT_REQUESTS_KEY";
 const COINGECKO_RATE_LIMIT_REQUESTS_TTL = 65;
 const COINGECKO_RATE_LIMIT_MAX_REQUESTS = 25;
