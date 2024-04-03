@@ -58,11 +58,11 @@ const getCoinsList = async (forceRequestProxy = false) => {
     data = (
         await axios(config)
           .then(async (result) => {
-            evaluateRequestTurnOffProxy(!!proxy);
+            // evaluateRequestTurnOffProxy(!!proxy);
             return result;
           })
           .catch(async (error) => {
-            await evaluateRequestTurnOnProxy(!!proxy);
+            // await evaluateRequestTurnOnProxy(!!proxy);
             return error
           })
     ).data;
@@ -112,11 +112,11 @@ const getSupportedCurrencies = async (forceRequestProxy = false) => {
   data = (
       await axios(config)
         .then(async (result) => {
-          evaluateRequestTurnOffProxy(!!proxy);
+          // evaluateRequestTurnOffProxy(!!proxy);
           return result;
         })
         .catch(async (error) => {
-          await evaluateRequestTurnOnProxy(!!proxy);
+          // await evaluateRequestTurnOnProxy(!!proxy);
           return error
         })
     ).data;
@@ -147,12 +147,12 @@ const getSimplePrice = async (coin, currency, forceRequestProxy = false) => {
   }
     return axios(config)
       .then(async (result) => {
-        evaluateRequestTurnOffProxy(!!proxy);
+        // evaluateRequestTurnOffProxy(!!proxy);
         return result;
       })
       .catch(async (error) => {
-        logger.info(`Evaluating turn ON proxy: ${error}`);
-        await evaluateRequestTurnOnProxy(!!proxy);
+        // logger.info(`Evaluating turn ON proxy: ${error}`);
+        // await evaluateRequestTurnOnProxy(!!proxy);
         return error
       });
 };
@@ -173,11 +173,11 @@ const getCoinsMarket = async (page, forceRequestProxy = false) => {
   }
     return axios(config)
       .then(async (result) => {
-        evaluateRequestTurnOffProxy(!!proxy);
+        // evaluateRequestTurnOffProxy(proxy);
         return result;
       })
       .catch(async (error) => {
-        await evaluateRequestTurnOnProxy(!!proxy);
+        // await evaluateRequestTurnOnProxy(proxy);
         return error
       });
 };
@@ -196,11 +196,11 @@ const getTopNFTProjects = async (chain, forceRequestProxy = false) => {
   }
   return axios(config)
     .then(async (result) => {
-      evaluateRequestTurnOffProxy(!!proxy);
+      // evaluateRequestTurnOffProxy(!!proxy);
       return result;
     })
     .catch(async (error) => {
-      await evaluateRequestTurnOnProxy(!!proxy);
+      // await evaluateRequestTurnOnProxy(!!proxy);
       return error
     })
 };
@@ -219,11 +219,11 @@ const getNFTProjectFloorPrice = async (slug, forceRequestProxy = false) => {
   }
   return axios(config)
     .then(async (result) => {
-      evaluateRequestTurnOffProxy(!!proxy);
+      // evaluateRequestTurnOffProxy(!!proxy);
       return result;
     })
     .catch(async (error) => {
-      await evaluateRequestTurnOnProxy(!!proxy);
+      // await evaluateRequestTurnOnProxy(!!proxy);
       return error
     });
 };
@@ -261,6 +261,7 @@ const executeRateLimitedRequest = async (func, ...args) => {
 };
 
 const evaluateRequestTurnOffProxy = (isProxyRequest) => {
+  logger.info('Called evaluateRequestTurnOffProxy', { isProxyRequest });
   if (!isProxyRequest) {
     logger.info('Turning OFF PROXY for coingecko');
     RedisClient.set(COINGECKO_USE_PROXY_KEY, "false").catch((_) => { });
@@ -268,6 +269,7 @@ const evaluateRequestTurnOffProxy = (isProxyRequest) => {
 };
 
 const evaluateRequestTurnOnProxy = async (isProxyRequest) => {
+  logger.info('Called evaluateRequestTurnOnProxy', { isProxyRequest });
   if (!isProxyRequest) {
     logger.info('Turning ON PROXY for coingecko');
     if ((await RedisClient.get(COINGECKO_USE_PROXY_KEY).catch((_) => { })) !== "true") {
