@@ -134,7 +134,7 @@ const getSimplePrice = async (coin, currency, forceRequestProxy = false) => {
       .catch(async (error) => {
         // logger.info(`Evaluating turn ON proxy: ${error}`);
         // await evaluateRequestTurnOnProxy(!!proxy);
-        return error
+         throw error;
       });
 };
 
