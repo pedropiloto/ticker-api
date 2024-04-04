@@ -1,7 +1,6 @@
 const newrelic = require("newrelic");
 const Bugsnag = require("@bugsnag/js");
 const axios = require("axios");
-const Bottleneck = require("bottleneck");
 const HttpsProxyAgent = require("https-proxy-agent");
 
 const RedisClient = require("../gateways/redis-gateway");
@@ -11,14 +10,9 @@ const COINGECKO_USE_PROXY_KEY = "COINGECKO_USE_PROXY_KEY";
 const COINGECKO_USE_PROXY_KEY_TTL = 600;
 const COINGECKO_RATE_LIMIT_REQUESTS_KEY = "COINGECKO_RATE_LIMIT_REQUESTS_KEY";
 const COINGECKO_RATE_LIMIT_REQUESTS_TTL = 65;
-const COINGECKO_RATE_LIMIT_MAX_REQUESTS = 25;
+const COINGECKO_RATE_LIMIT_MAX_REQUESTS = 28;
 
 const logger = getLogger();
-
-const limiter = new Bottleneck({
-  maxConcurrent: 1,
-  minTime: 5000, // pick a value that makes sense for your use case
-});
 
 const lock = require("redis-lock")(RedisClient);
 
@@ -295,7 +289,7 @@ const getProxy = async (forceRequestProxy = false) => {
     proxyResult =  proxy;
   }
   newrelic.addCustomAttribute(
-    "proxy", !!proxyResult
+    "proxy", proxyResult === undefined ? false : true
   )
   return proxyResult;
 }
