@@ -35,8 +35,8 @@ const call = async (tickerName) => {
     if (COINGECKO_TICKER_EXCEPTIONS_MAP[coinSymbol]) {
       coinProviderId = COINGECKO_TICKER_EXCEPTIONS_MAP[coinSymbol]
     } else {
-      const coinsList = await CoingeckoGateway.executeRateLimitedRequest(CoingeckoGateway.getCoinsList);
-      if(!coinsList){
+      const coinsList = await getAllCoinsList();
+      if (!coinsList) {
         throw new Error("Failed to retrieve coinslist");
       }
       const providerCoin = coinsList.find((x) => x["symbol"] === coinSymbol);
@@ -90,9 +90,18 @@ const call = async (tickerName) => {
 };
 
 const listConfig = async (startIndex, endIndex) => {
-  const coinsList = await CoingeckoGateway.executeRateLimitedRequest(CoingeckoGateway.getCoinsList)
+  const cacheKey = "CoinsListCacheKey";
+  let coinsList;
+  const cachedCoinsList = await RedisClient.get(cacheKey).catch((error) => {
+    logger.error(`ERROR fetching coins list from cache`);
+    Bugsnag.notify(error);
+  });
+  if (cachedCoinsList) {
+    coinsList = JSON.parse(cachedCoinsList);
+  } else {
+    coinsList = await CoingeckoGateway.executeRateLimitedRequest(CoingeckoGateway.getCoinsList);
+  }
   const currenciesList = SUPPORTED_CURRENCIES;
-
   return {
     coins: {
       data: coinsList
@@ -103,6 +112,23 @@ const listConfig = async (startIndex, endIndex) => {
     currencies: currenciesList.map((x) => x.toUpperCase()),
   };
 };
+
+const getAllCoinsList = async () => {
+  const cacheKey = "CoinsListCacheKey";
+  const data = await RedisClient.get(cacheKey).catch((error) => {
+    logger.error(`ERROR fetching coins list from cache`);
+    Bugsnag.notify(error);
+  });
+
+  if (data) {
+    logger.info(
+      `Retrieving coins list from cache`
+    );
+    return JSON.parse(data);
+  } else {
+    return await CoingeckoGateway.executeRateLimitedRequest(CoingeckoGateway.getCoinsList);
+  }
+}
 
 const getCoin = async (coinSymbol) => {
   const coinsList = await CoingeckoGateway.executeRateLimitedRequest(CoingeckoGateway.getCoinsList);

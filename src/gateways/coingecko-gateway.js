@@ -20,20 +20,7 @@ const getCoinsList = async (forceRequestProxy = false) => {
   const cacheKey = "CoinsListCacheKey";
   let data;
 
-  data = await RedisClient.get(cacheKey).catch((error) => {
-    logger.error(`ERROR fetching coins list from cache`);
-    Bugsnag.notify(error);
-  });
-
-  if (data) {
-    logger.info(
-      `Retrieving coins list from cache`
-    );
-    return JSON.parse(data);
-  }
-
   try {
-
     const proxy = await getProxy(forceRequestProxy);
     const config = {
       method: "get",
