@@ -3,6 +3,7 @@ const Bugsnag = require("@bugsnag/js");
 
 const TickerQuoteInteractor = require("../interactors/ticker-quote");
 const { getLogger } = require("../utils/logger");
+const { UndefinedResultError, UnsupportedTickerError } = require("../errors");
 
 const logger = getLogger();
 
@@ -20,10 +21,17 @@ const get = async (req, res, next) => {
         res.status(400).send("Unsupported");
         return;
       }
+      if(!resultQuote) {
+        throw new UndefinedResultError();
+      }
       newrelic.addCustomAttribute("cached", resultQuote.isCached);
       res.send(resultQuote.value);
       return;
     } catch (error) {
+      if (error instanceof UnsupportedTickerError) {
+        res.status(400).send("Unsupported");
+        return;
+      }
       logger.error(`RETRY ${retries}. UNKNOWN ERROR: ${error.stack}, ticker: ${tickerName}.`);
       if (retries === maxRetries) {
         logger.error(`MAX RETRIES. UNKNOWN ERROR: ${error.stack}, ticker: ${tickerName}.`);

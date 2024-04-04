@@ -5,6 +5,7 @@ const RedisClient = require("../gateways/redis-gateway");
 const SUPPORTED_CURRENCIES = require("../supported-currencies");
 const COINGECKO_TICKER_EXCEPTIONS_MAP = require("../coingecko-ticker-exceptions-map");
 const { getLogger } = require("../utils/logger");
+const { UnsupportedTickerError, ProviderError, UndefinedResultError } = require("../errors");
 
 const logger = getLogger();
 
@@ -23,7 +24,7 @@ const call = async (tickerName) => {
   const tickerArray = tickerName.split(":");
   if (tickerArray.length !== 2) {
     logger.error(`invalid ticker ${tickerName}`);
-    return;
+    throw new UnsupportedTickerError();
   }
 
   const coinSymbol = tickerArray[0].toLowerCase();
@@ -41,7 +42,7 @@ const call = async (tickerName) => {
       const providerCoin = coinsList.find((x) => x["symbol"] === coinSymbol);
       if (!providerCoin) {
         logger.error(`Unsupported ticker ${tickerName}`);
-        return;
+        throw new UnsupportedTickerError();
       }
       coinProviderId = providerCoin["id"];
     }
@@ -51,14 +52,14 @@ const call = async (tickerName) => {
     // if (error && error.response && error.response.status && error.response.status === 429) {
     logger.error(`Error fetching ticker ${tickerName} from provider: ${error}`);
     Bugsnag.notify(error);
-    return;
+    throw new ProviderError();
   }
 
   if (!result) {
     logger.error(
       `Result undefined. Provider did not return quote for ticker: ${tickerName} -> ${coinProviderId} - ${currency}`
     );
-    return;
+    throw new UndefinedResultError()
   }
 
   const tickerQuoteObject = result[coinProviderId];
@@ -69,7 +70,7 @@ const call = async (tickerName) => {
     logger.error(
       `Provider did not return quote for ticker: ${tickerName} -> ${coinProviderId} - ${currency}`
     );
-    return;
+    throw UndefinedResultError();
   }
 
   const change24h =
