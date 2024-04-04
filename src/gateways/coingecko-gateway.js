@@ -10,7 +10,7 @@ const COINGECKO_USE_PROXY_KEY = "COINGECKO_USE_PROXY_KEY";
 const COINGECKO_USE_PROXY_KEY_TTL = 600;
 const COINGECKO_RATE_LIMIT_REQUESTS_KEY = "COINGECKO_RATE_LIMIT_REQUESTS_KEY";
 const COINGECKO_RATE_LIMIT_REQUESTS_TTL = 65;
-const COINGECKO_RATE_LIMIT_MAX_REQUESTS = 27;
+const COINGECKO_RATE_LIMIT_MAX_REQUESTS = 20;
 
 const logger = getLogger();
 
@@ -256,9 +256,9 @@ const evaluateRequestTurnOffProxy = (isProxyRequest) => {
 const evaluateRequestTurnOnProxy = async (isProxyRequest) => {
   logger.info('Called evaluateRequestTurnOnProxy', { isProxyRequest });
   if (!isProxyRequest) {
-    logger.info(`Turning ON proxy for coingecko during ${COINGECKO_RATE_LIMIT_REQUESTS_TTL} seconds`);
+    logger.info(`Turning ON proxy for coingecko during 60 seconds`);
     RedisClient.set(COINGECKO_RATE_LIMIT_REQUESTS_KEY, COINGECKO_RATE_LIMIT_MAX_REQUESTS).catch((_) => { });
-    RedisClient.expire(COINGECKO_RATE_LIMIT_REQUESTS_KEY, COINGECKO_RATE_LIMIT_REQUESTS_TTL);
+    RedisClient.expire(COINGECKO_RATE_LIMIT_REQUESTS_KEY, 60);
   }
 };
 
