@@ -90,17 +90,7 @@ const call = async (tickerName) => {
 };
 
 const listConfig = async (startIndex, endIndex) => {
-  const cacheKey = "CoinsListCacheKey";
-  let coinsList;
-  const cachedCoinsList = await RedisClient.get(cacheKey).catch((error) => {
-    logger.error(`ERROR fetching coins list from cache`);
-    Bugsnag.notify(error);
-  });
-  if (cachedCoinsList) {
-    coinsList = JSON.parse(cachedCoinsList);
-  } else {
-    coinsList = await CoingeckoGateway.executeRateLimitedRequest(CoingeckoGateway.getCoinsList);
-  }
+  const coinsList = await getAllCoinsList();
   const currenciesList = SUPPORTED_CURRENCIES;
   return {
     coins: {
@@ -131,7 +121,7 @@ const getAllCoinsList = async () => {
 }
 
 const getCoin = async (coinSymbol) => {
-  const coinsList = await CoingeckoGateway.executeRateLimitedRequest(CoingeckoGateway.getCoinsList);
+  const coinsList = await getAllCoinsList();
   const coin = coinsList.find((x) => x["symbol"] === coinSymbol.toLowerCase());
 
   if (!coin) {
