@@ -43,7 +43,9 @@ const getCoinsList = async (forceRequestProxy = false) => {
             return result;
           })
           .catch(async (error) => {
-            await evaluateRequestTurnOnProxy(!!proxy);
+            if (error && error.response && error.response.status && error.response.status === 429) {
+              await evaluateRequestTurnOnProxy(!!proxy);
+            }
             throw error
           })
     ).data;
@@ -132,7 +134,6 @@ const getSimplePrice = async (coin, currency, forceRequestProxy = false) => {
         return result;
       })
       .catch(async (error) => {
-        // logger.info(`Evaluating turn ON proxy: ${error}`);
         await evaluateRequestTurnOnProxy(!!proxy);
          throw error;
       });
