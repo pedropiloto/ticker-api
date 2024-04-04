@@ -9,8 +9,8 @@ const { getLogger } = require("../utils/logger");
 const COINGECKO_USE_PROXY_KEY = "COINGECKO_USE_PROXY_KEY";
 const COINGECKO_USE_PROXY_KEY_TTL = 600;
 const COINGECKO_RATE_LIMIT_REQUESTS_KEY = "COINGECKO_RATE_LIMIT_REQUESTS_KEY";
-const COINGECKO_RATE_LIMIT_REQUESTS_TTL = 70;
-const COINGECKO_RATE_LIMIT_MAX_REQUESTS = 25;
+const COINGECKO_RATE_LIMIT_REQUESTS_TTL = 65;
+const COINGECKO_RATE_LIMIT_MAX_REQUESTS = 27;
 
 const logger = getLogger();
 
@@ -37,17 +37,17 @@ const getCoinsList = async (forceRequestProxy = false) => {
     }
 
     data = (
-        await axios(config)
-          .then(async (result) => {
-            // evaluateRequestTurnOffProxy(!!proxy);
-            return result;
-          })
-          .catch(async (error) => {
-            if (error && error.response && error.response.status && error.response.status === 429) {
-              await evaluateRequestTurnOnProxy(!!proxy);
-            }
-            throw error
-          })
+      await axios(config)
+        .then(async (result) => {
+          // evaluateRequestTurnOffProxy(!!proxy);
+          return result;
+        })
+        .catch(async (error) => {
+          // if (error && error.response && error.response.status && error.response.status === 429) {
+          await evaluateRequestTurnOnProxy(!!proxy);
+          // }
+          throw error;
+        })
     ).data;
 
     try {
@@ -93,16 +93,16 @@ const getSupportedCurrencies = async (forceRequestProxy = false) => {
   }
 
   data = (
-      await axios(config)
-        .then(async (result) => {
-          // evaluateRequestTurnOffProxy(!!proxy);
-          return result;
-        })
-        .catch(async (error) => {
-          await evaluateRequestTurnOnProxy(!!proxy);
-          throw error
-        })
-    ).data;
+    await axios(config)
+      .then(async (result) => {
+        // evaluateRequestTurnOffProxy(!!proxy);
+        return result;
+      })
+      .catch(async (error) => {
+        await evaluateRequestTurnOnProxy(!!proxy);
+        throw error
+      })
+  ).data;
   try {
     RedisClient.set(cacheKey, JSON.stringify(data));
     RedisClient.expire(cacheKey, 60 * 60 * 6);
@@ -128,15 +128,15 @@ const getSimplePrice = async (coin, currency, forceRequestProxy = false) => {
       `Adding proxy to coingecko request`
     );
   }
-    return axios(config)
-      .then(async (result) => {
-        // evaluateRequestTurnOffProxy(!!proxy);
-        return result;
-      })
-      .catch(async (error) => {
-        await evaluateRequestTurnOnProxy(!!proxy);
-         throw error;
-      });
+  return axios(config)
+    .then(async (result) => {
+      // evaluateRequestTurnOffProxy(!!proxy);
+      return result;
+    })
+    .catch(async (error) => {
+      await evaluateRequestTurnOnProxy(!!proxy);
+      throw error;
+    });
 };
 
 const getCoinsMarket = async (page, forceRequestProxy = false) => {
@@ -153,15 +153,15 @@ const getCoinsMarket = async (page, forceRequestProxy = false) => {
       `Adding proxy to coingecko request: ${page}`
     );
   }
-    return axios(config)
-      .then(async (result) => {
-        // evaluateRequestTurnOffProxy(proxy);
-        return result;
-      })
-      .catch(async (error) => {
-        await evaluateRequestTurnOnProxy(proxy);
-        throw error
-      });
+  return axios(config)
+    .then(async (result) => {
+      // evaluateRequestTurnOffProxy(proxy);
+      return result;
+    })
+    .catch(async (error) => {
+      await evaluateRequestTurnOnProxy(proxy);
+      throw error
+    });
 };
 
 const getTopNFTProjects = async (chain, forceRequestProxy = false) => {
@@ -238,8 +238,11 @@ const executeRateLimitedRequest = async (func, ...args) => {
     logger.info(`Not allowing non proxy coingecko request. Coingecko ongoing requests: ${requestsOngoing}`);
     args.push(true);
   }
-  await done()
-  return func(...args)
+  try {
+    return await func(...args);
+  } finally {
+    await done()
+  }
 };
 
 const evaluateRequestTurnOffProxy = (isProxyRequest) => {
@@ -272,7 +275,7 @@ const getProxy = async (forceRequestProxy = false) => {
   const systemUserProxyActivated = await RedisClient.get(COINGECKO_USE_PROXY_KEY).catch((_) => { });
 
   if (!!forceRequestProxy || forceProxy === "true" || systemUserProxyActivated === "true") {
-    proxyResult =  proxy;
+    proxyResult = proxy;
   }
   newrelic.addCustomAttribute(
     "proxy", proxyResult === undefined ? false : true

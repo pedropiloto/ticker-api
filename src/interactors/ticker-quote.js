@@ -31,7 +31,6 @@ const call = async (tickerName) => {
   const currency = tickerArray[1].toLowerCase();
   let coinProviderId;
   let result;
-  try {
     if (COINGECKO_TICKER_EXCEPTIONS_MAP[coinSymbol]) {
       coinProviderId = COINGECKO_TICKER_EXCEPTIONS_MAP[coinSymbol]
     } else {
@@ -46,20 +45,19 @@ const call = async (tickerName) => {
       }
       coinProviderId = providerCoin["id"];
     }
+  try {
     result = (await CoingeckoGateway.executeRateLimitedRequest(CoingeckoGateway.getSimplePrice, coinProviderId, currency))
       .data;
   } catch (error) {
-    // if (error && error.response && error.response.status && error.response.status === 429) {
     logger.error(`Error fetching ticker ${tickerName} from provider: ${error}`);
-    Bugsnag.notify(error);
-    throw new ProviderError();
+    throw error;
   }
 
   if (!result) {
     logger.error(
       `Result undefined. Provider did not return quote for ticker: ${tickerName} -> ${coinProviderId} - ${currency}`
     );
-    throw new UndefinedResultError()
+    throw new Error(`Result undefined. Provider did not return quote for ticker: ${tickerName} -> ${coinProviderId} - ${currency}`)
   }
 
   const tickerQuoteObject = result[coinProviderId];
@@ -70,7 +68,7 @@ const call = async (tickerName) => {
     logger.error(
       `Provider did not return quote for ticker: ${tickerName} -> ${coinProviderId} - ${currency}`
     );
-    throw UndefinedResultError();
+    throw Error(`Provider did not return quote for ticker: ${tickerName} -> ${coinProviderId} - ${currency}`);
   }
 
   const change24h =
