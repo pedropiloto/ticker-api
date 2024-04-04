@@ -212,7 +212,7 @@ const getNFTProjectFloorPrice = async (slug, forceRequestProxy = false) => {
 
 const executeRateLimitedRequest = async (func, ...args) => {
   const done = await lock("coingeckoRequest");
-  setTimeout(done, 2000);
+  setTimeout(done, 2500);
   let requestsOngoing;
   try {
     requestsOngoing = Number(await RedisClient.get(COINGECKO_RATE_LIMIT_REQUESTS_KEY).catch((_) => { return 0 }));

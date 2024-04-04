@@ -5,7 +5,7 @@ const RedisClient = require("../gateways/redis-gateway");
 const SUPPORTED_CURRENCIES = require("../supported-currencies");
 const COINGECKO_TICKER_EXCEPTIONS_MAP = require("../coingecko-ticker-exceptions-map");
 const { getLogger } = require("../utils/logger");
-const { UnsupportedTickerError, ProviderError, UndefinedResultError } = require("../errors");
+const { UnsupportedTickerError } = require("../errors");
 
 const logger = getLogger();
 
