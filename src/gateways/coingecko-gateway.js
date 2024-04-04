@@ -10,7 +10,7 @@ const COINGECKO_USE_PROXY_KEY = "COINGECKO_USE_PROXY_KEY";
 const COINGECKO_USE_PROXY_KEY_TTL = 600;
 const COINGECKO_RATE_LIMIT_REQUESTS_KEY = "COINGECKO_RATE_LIMIT_REQUESTS_KEY";
 const COINGECKO_RATE_LIMIT_REQUESTS_TTL = 65;
-const COINGECKO_RATE_LIMIT_MAX_REQUESTS = 28;
+const COINGECKO_RATE_LIMIT_MAX_REQUESTS = 25;
 
 const logger = getLogger();
 
@@ -44,7 +44,7 @@ const getCoinsList = async (forceRequestProxy = false) => {
           })
           .catch(async (error) => {
             // await evaluateRequestTurnOnProxy(!!proxy);
-            return error
+            throw error
           })
     ).data;
 
@@ -98,7 +98,7 @@ const getSupportedCurrencies = async (forceRequestProxy = false) => {
         })
         .catch(async (error) => {
           // await evaluateRequestTurnOnProxy(!!proxy);
-          return error
+          throw error
         })
     ).data;
   try {
@@ -159,7 +159,7 @@ const getCoinsMarket = async (page, forceRequestProxy = false) => {
       })
       .catch(async (error) => {
         // await evaluateRequestTurnOnProxy(proxy);
-        return error
+        throw error
       });
 };
 
@@ -182,7 +182,7 @@ const getTopNFTProjects = async (chain, forceRequestProxy = false) => {
     })
     .catch(async (error) => {
       // await evaluateRequestTurnOnProxy(!!proxy);
-      return error
+      throw error
     })
 };
 
@@ -205,7 +205,7 @@ const getNFTProjectFloorPrice = async (slug, forceRequestProxy = false) => {
     })
     .catch(async (error) => {
       // await evaluateRequestTurnOnProxy(!!proxy);
-      return error
+      throw error
     });
 };
 
