@@ -1,3 +1,4 @@
 module.exports = {
-  "ada": "cardano"
+  "ada": "cardano",
+  "matic": "matic-network",
 };
